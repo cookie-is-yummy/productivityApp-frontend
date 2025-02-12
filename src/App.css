@@ -1,30 +1,187 @@
-.app-container {
-  max-width: 800px;
-  margin: 20px auto;
-  background-color: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  font-family: Arial, sans-serif;
+/* Global Styles */
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #f4f5f7;
+  color: #333;
 }
 
-header {
+/* App layout */
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* Sidebar styles */
+.sidebar {
+  width: 80px;
+  background-color: #2d3436;
+  color: #dfe6e9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 1rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebar li {
+  width: 100%;
+  padding: 1rem 0;
   text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-nav {
-  margin: 10px 0;
+.sidebar li:hover,
+.sidebar li.active {
+  background-color: #636e72;
 }
 
-nav button {
-  margin: 5px;
-  padding: 8px 12px;
+.sidebar li span {
+  display: block;
+  font-size: 0.7rem;
+  margin-top: 0.3rem;
+}
+
+/* Main content area */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* Section styling */
+.section {
+  margin-bottom: 2rem;
+}
+
+/* Home section styles */
+.home h1 {
+  margin-top: 0;
+}
+
+/* Todos and Goals Forms */
+.todo-form, .goal-form {
+  margin-bottom: 1rem;
+}
+.todo-form input,
+.goal-form input {
+  padding: 0.5rem;
+  margin: 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+.todo-form button,
+.goal-form button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #2d3436;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.todo-form button:hover,
+.goal-form button:hover {
+  background-color: #636e72;
+}
+
+/* Lists */
+.todo-list,
+.goal-list {
+  list-style: none;
+  padding: 0;
+}
+.todo-list li,
+.goal-list li {
+  margin: 0.5rem 0;
+  background-color: #fff;
+  padding: 0.75rem;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Tag styling for todos */
+.tag {
+  background-color: #0984e3;
+  color: #fff;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Routine styles */
+.routine-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.routine-slot {
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  flex: 1 1 200px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.routine-slot:hover {
+  transform: scale(1.02);
+}
+.routine-slot.locked {
+  border: 2px solid #ff7675;
+}
+.routine-slot .time {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.routine-slot .description {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+.routine-slot .assigned {
+  font-size: 0.8rem;
+  color: #2d3436;
+}
+
+/* Modal for assigning a todo to a routine slot */
+.assignment-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+.assignment-modal h3 {
+  margin-top: 0;
+}
+.assignment-modal select {
+  padding: 0.5rem;
+  margin: 0.75rem 0;
+  width: 100%;
+}
+.assignment-modal button {
+  margin-right: 0.5rem;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
-  background-color: #eee;
+  cursor: pointer;
 }
-
-nav button.active {
-  background-color: #007bff;
-  color: white;
+.assignment-modal button:first-of-type {
+  background-color: #2d3436;
+  color: #fff;
+}
+.assignment-modal button:last-of-type {
+  background-color: #d63031;
+  color: #fff;
 }

@@ -1,38 +1,34 @@
 import React, { useState } from 'react';
+import Sidebar from './components/Sidebar';
+import Home from './components/Home';
+import Todos from './components/Todos';
+import Goals from './components/Goals';
 import Routine from './components/Routine';
-import GoalsTracker from './components/GoalsTracker';
-import NextAction from './components/NextAction';
-import DailyTodo from './components/DailyTodo';
-import Journal from './components/Journal';
-import Events from './components/Events';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState("Routine");
+  const [selectedMenu, setSelectedMenu] = useState('home');
+
+  const renderContent = () => {
+    switch (selectedMenu) {
+      case 'home':
+        return <Home />;
+      case 'todos':
+        return <Todos />;
+      case 'goals':
+        return <Goals />;
+      case 'routine':
+        return <Routine />;
+      default:
+        return <Home />;
+    }
+  };
 
   return (
-    <div className="app-container">
-      <header>
-        <h1>My Routine &amp; Goals Tracker</h1>
-        <nav>
-          {["Routine", "Goals", "Next Action", "Daily Todos", "Journal", "Events"].map(tab => (
-            <button
-              key={tab}
-              className={activeTab === tab ? "active" : ""}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-      </header>
-      <main>
-        {activeTab === "Routine" && <Routine />}
-        {activeTab === "Goals" && <GoalsTracker />}
-        {activeTab === "Next Action" && <NextAction />}
-        {activeTab === "Daily Todos" && <DailyTodo />}
-        {activeTab === "Journal" && <Journal />}
-        {activeTab === "Events" && <Events />}
+    <div className="app">
+      <Sidebar selectedMenu={selectedMenu} setSelectedMenu={setSelectedMenu} />
+      <main className="main-content">
+        {renderContent()}
       </main>
     </div>
   );
