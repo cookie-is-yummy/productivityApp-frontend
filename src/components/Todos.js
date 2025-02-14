@@ -35,6 +35,20 @@ function Todos() {
       .catch(err => console.error(err));
   };
 
+  // Toggle the completion state of a todo with a PUT request
+  const toggleTodoCompletion = (todoId, currentStatus) => {
+    fetch(`https://productivity-app-xyzfe-b5bed29e76a5.herokuapp.com/api/todos/${todoId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: !currentStatus })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setTodos(todos.map(todo => todo.id === data.id ? { ...todo, completed: !currentStatus } : todo));
+      })
+      .catch(err => console.error(err));
+  };
+
   return (
     <div className="section todos">
       <h2>Todos</h2>
@@ -62,7 +76,14 @@ function Todos() {
       <ul className="todo-list">
         {todos.map(todo => (
           <li key={todo.id}>
-            <span>{todo.text}</span>
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodoCompletion(todo.id, todo.completed)}
+            />
+            <span style={{ textDecoration: todo.completed ? 'line-through' : 'none', marginLeft: '0.5rem' }}>
+              {todo.text}
+            </span>
             {todo.tags && <span className="tag">{todo.tags}</span>}
             {todo.duration && <span className="duration">{todo.duration} min</span>}
           </li>

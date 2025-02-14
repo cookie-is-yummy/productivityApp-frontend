@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
 function Routine() {
+  // Get current day (e.g., "Monday")
+  const getToday = () => {
+    const today = new Date();
+    return today.toLocaleString('en-US', { weekday: 'long' });
+  };
+
   const [routineSlots, setRoutineSlots] = useState([]);
-  const [day, setDay] = useState('Monday');
+  // Default to the current day
+  const [day, setDay] = useState(getToday());
   const [todos, setTodos] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedTodo, setSelectedTodo] = useState('');
 
-  // Fetch routine for selected day
+  // Fetch routine for the current day
   useEffect(() => {
     fetch(`https://productivity-app-xyzfe-b5bed29e76a5.herokuapp.com/api/routine/${day}`)
       .then(res => res.json())
@@ -15,7 +22,7 @@ function Routine() {
       .catch(err => console.error(err));
   }, [day]);
 
-  // Fetch todos for optionally assigning to a routine slot
+  // Fetch todos (for assigning to routine slots)
   useEffect(() => {
     fetch('https://productivity-app-xyzfe-b5bed29e76a5.herokuapp.com/api/todos')
       .then(res => res.json())
@@ -23,12 +30,14 @@ function Routine() {
       .catch(err => console.error(err));
   }, []);
 
+  // Only allow assignment if the routine slot is marked as "locked_in"
   const openAssignmentModal = (slot) => {
     if (slot.locked_in) {
       setSelectedSlot(slot);
     }
   };
 
+  // Make PUT request to assign a todo to a routine slot
   const assignTodo = () => {
     if (!selectedSlot || !selectedTodo) return;
     fetch(`https://productivity-app-xyzfe-b5bed29e76a5.herokuapp.com/api/routine/${day}/${selectedSlot.id}`, {
@@ -48,7 +57,7 @@ function Routine() {
   return (
     <div className="section routine">
       <h2>Routine for {day}</h2>
-      <div className="routine-container">
+      <div className="routine-container vertical">
         {routineSlots.map(slot => (
           <div
             key={slot.id}
