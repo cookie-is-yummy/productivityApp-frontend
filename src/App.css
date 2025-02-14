@@ -238,3 +238,38 @@ body {
   background: rgba(0,0,0,0.2);
   border-radius: 4px;
 }
+
+.routine-slot {
+  transition: all 0.2s ease-out;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.routine-slot:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.day-pill {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+
+/*.assignment-modal {*/
+/*  @apply p-6 rounded-2xl shadow-xl bg-white;*/
+/*  width: 320px;*/
+/*}*/
+
+.task-checkbox {
+  @apply w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center
+         transition-colors duration-200 ease-in-out;
+}
+
+.tag-chip {
+  @apply px-2 py-1 text-xs font-medium rounded-full transition-colors
+         duration-200 ease-in-out;
+}
+
+.todo-card {
+  @apply p-4 bg-white rounded-xl shadow-sm hover:shadow-md
+         transition-shadow duration-200 ease-in-out;
+}
