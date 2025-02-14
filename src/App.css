@@ -1,241 +1,240 @@
+/* Modern Color Scheme */
+:root {
+  --primary: #4A90E2;      /* Softer blue */
+  --secondary: #7C4DFF;   /* Modern purple */
+  --success: #00C853;     /* Material green */
+  --surface: #FFFFFF;
+  --background: #F8F9FF;   /* Cooler background */
+  --text-primary: #2D3436;
+  --text-secondary: #636E72;
+  --border: rgba(0,0,0,0.1);
+  --hover: rgba(0,0,0,0.04);
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
 /* Global Styles */
 body {
   margin: 0;
-  font-family: 'Roboto', sans-serif;
-  background-color: #f7f8fa;
-  color: #333;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--background);
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 
 /* App layout */
 .app {
   display: flex;
   height: 100vh;
+  background: var(--background);
 }
 
-/* Sidebar styles */
+/* Modern Sidebar (Like Notion) */
 .sidebar {
-  width: 80px;
-  background-color: #ffffff;
-  border-right: 1px solid #e1e4e8;
-  color: #586069;
+  width: 240px;
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 1rem 0;
+  transition: width 0.3s ease;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding-top: 1rem;
 }
 
 .sidebar ul {
   list-style: none;
   padding: 0;
-  width: 100%;
+  margin: 0;
 }
 
 .sidebar li {
-  width: 100%;
-  padding: 1rem 0;
-  text-align: center;
+  padding: 0.75rem 1.5rem;
+  margin: 0 0.5rem;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
 }
 
-.sidebar li:hover,
+.sidebar li:hover {
+  background: var(--hover);
+}
+
 .sidebar li.active {
-  background-color: #f1f3f5;
+  background: rgba(var(--primary), 0.1);
+  color: var(--primary);
+  font-weight: 500;
 }
 
 .sidebar li span {
-  display: block;
-  font-size: 0.7rem;
-  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
-/* Main content area */
+/* Main Content Area */
 .main-content {
   flex: 1;
-  padding: 2rem;
+  padding: 2rem 3rem;
   overflow-y: auto;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* Section styling */
+/* Modern Section Styling */
 .section {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 2rem;
   margin-bottom: 2rem;
+  box-shadow: var(--shadow);
 }
 
-/* Home section styles */
-.home h1 {
-  margin-top: 0;
-  color: #24292e;
+.section h2 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-/* Todos and Goals Forms */
+/* Modern Form Elements */
 .todo-form, .goal-form {
-  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .todo-form input,
 .goal-form input {
-  padding: 0.75rem;
-  margin: 0.25rem;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
+  flex: 1;
+  padding: 0.875rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   font-size: 1rem;
-  outline: none;
-  background-color: #fafbfc;
-  transition: border-color 0.2s ease;
+  background: var(--surface);
+  transition: all 0.2s ease;
 }
 
 .todo-form input:focus,
 .goal-form input:focus {
-  border-color: #0366d6;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary), 0.1);
 }
 
 .todo-form button,
 .goal-form button {
-  padding: 0.75rem 1rem;
+  padding: 0.875rem 1.5rem;
   border: none;
-  background-color: #0366d6;
-  color: #fff;
-  border-radius: 6px;
+  background: var(--primary);
+  color: white;
+  border-radius: 12px;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .todo-form button:hover,
 .goal-form button:hover {
-  background-color: #0356b6;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
 }
 
-/* Lists */
-.todo-list,
-.goal-list {
-  list-style: none;
-  padding: 0;
+/* Modern List Items */
+.todo-list, .goal-list {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .todo-list li,
 .goal-list li {
-  margin: 0.5rem 0;
-  background-color: #fff;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(27,31,35,0.12);
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border-radius: 12px;
   display: flex;
   align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
 }
 
-/* Tag styling for todos */
+.todo-list li:hover,
+.goal-list li:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow);
+}
+
+/* Modern Tags */
 .tag {
-  background-color: #e1ecf4;
-  color: #0366d6;
-  padding: 0.3rem 0.6rem;
-  border-radius: 3px;
-  margin-left: 0.5rem;
-  font-size: 0.85rem;
+  background: rgba(var(--primary), 0.1);
+  color: var(--primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
-/* Routine styles */
+/* Routine Cards */
 .routine-container.vertical {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 1rem;
 }
 
 .routine-slot {
-  background-color: #fff;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(27,31,35,0.12);
+  background: var(--surface);
+  padding: 1.5rem;
+  border-radius: 16px;
+  border-left: 4px solid transparent;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex;
-  flex-direction: column;
+  transition: all 0.2s ease;
 }
 
 .routine-slot:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(27,31,35,0.15);
+  box-shadow: var(--shadow);
 }
 
 .routine-slot.locked {
-  border-left: 4px solid #0366d6;
+  border-left-color: var(--primary);
+  background: linear-gradient(90deg, rgba(var(--primary), 0.05) 0%, rgba(var(--primary), 0.01) 100%);
 }
 
-.routine-slot .time {
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  color: #24292e;
-}
-
-.routine-slot .description {
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  color: #586069;
-}
-
-.routine-slot .assigned {
-  font-size: 0.85rem;
-  color: #0969da;
-}
-
-/* Modal for assigning a todo to a routine slot */
+/* Modern Modal */
 .assignment-modal {
   position: fixed;
   top: 50%;
   left: 50%;
-  background-color: #fff;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(27,31,35,0.15);
+  background: var(--surface);
+  padding: 2rem;
+  border-radius: 24px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.16);
   transform: translate(-50%, -50%);
-  z-index: 1000;
+  width: 90%;
+  max-width: 400px;
+  backdrop-filter: blur(8px);
 }
 
 .assignment-modal h3 {
-  margin-top: 0;
-  color: #24292e;
+  margin: 0 0 1.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-.assignment-modal select {
-  padding: 0.75rem;
-  margin: 0.75rem 0;
-  width: 100%;
-  border: 1px solid #e1e4e8;
-  border-radius: 6px;
-  font-size: 1rem;
-  outline: none;
-  background-color: #fafbfc;
-  transition: border-color 0.2s ease;
+/* Utility Classes */
+.flex-center {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.assignment-modal select:focus {
-  border-color: #0366d6;
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-.assignment-modal button {
-  margin-right: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s ease;
+::-webkit-scrollbar-track {
+  background: var(--background);
 }
 
-.assignment-modal button:first-of-type {
-  background-color: #0366d6;
-  color: #fff;
-}
-
-.assignment-modal button:first-of-type:hover {
-  background-color: #0356b6;
-}
-
-.assignment-modal button:last-of-type {
-  background-color: #d73a49;
-  color: #fff;
-}
-
-.assignment-modal button:last-of-type:hover {
-  background-color: #c5303d;
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
 }
