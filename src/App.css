@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Modern Color Scheme */
 :root {
   --primary: #4A90E2;      /* Softer blue */
