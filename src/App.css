@@ -274,3 +274,415 @@ body {
   @apply p-4 bg-white rounded-xl shadow-sm hover:shadow-md
          transition-shadow duration-200 ease-in-out;
 }
+
+
+
+.routine {
+  position: relative;
+}
+
+.routine-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.routine-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+}
+
+.days-container {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.day-button {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #f3f4f6;
+}
+
+.day-button.selected {
+  background-color: #2563eb;
+  color: white;
+}
+
+.day-button:hover {
+  background-color: #e5e7eb;
+}
+
+.time-labels {
+  position: absolute;
+  left: -5rem;
+  top: 0;
+  width: 4rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.time-labels > * + * {
+  margin-top: 0.5rem;
+}
+
+.routine-slot {
+  position: relative;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+  background-color: white;
+}
+
+.routine-slot.locked-in {
+  border-left: 4px solid #3b82f6;
+  background: linear-gradient(to right, rgba(219, 234, 254, 0.5), white);
+  cursor: pointer;
+}
+
+.routine-slot:not(.locked-in) {
+  opacity: 0.75;
+}
+
+.todo-badge {
+  padding: 0.25rem 0.5rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-size: 0.875rem;
+  border-radius: 999px;
+}
+
+.add-button {
+  width: 2rem;
+  height: 2rem;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.routine-slot:hover .add-button {
+  opacity: 1;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 32rem;
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.select-container {
+  position: relative;
+}
+
+.select-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.select-input:focus {
+  outline: 2px solid #3b82f6;
+}
+
+.select-arrow {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.modal-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.modal-button.cancel {
+  color: #6b7280;
+}
+
+.modal-button.cancel:hover {
+  background-color: #f9fafb;
+}
+
+.modal-button.confirm {
+  background-color: #2563eb;
+  color: white;
+}
+
+.modal-button.confirm:hover {
+  background-color: #1d4ed8;
+}
+
+.todos-container {
+  padding: 2rem;
+}
+
+.todos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.todos-title {
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 600;
+}
+
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.todos-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.todos-list li:not(:last-child) {
+  margin-bottom: 0.5rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.todo-item:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.todo-checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  border: 2px solid #d1d5db;
+  margin-right: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.todo-checkbox.completed {
+  border-color: #10b981;
+  background-color: #10b981;
+}
+
+.todo-text {
+  color: #1f2937;
+}
+
+.todo-text.completed {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.todo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.todo-tag {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 999px;
+}
+
+.todo-duration {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 32rem;
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.form-input:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -1px;
+}
+
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.tag-item {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tag-input {
+  flex: 1;
+  min-width: 7.5rem;
+  padding: 0.25rem;
+  outline: none;
+  border: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  color: #6b7280;
+  border-radius: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background-color: #f9fafb;
+}
+
+.duration-icon {
+  width: 1rem;
+  height: 1rem;
+  stroke: currentColor;
+}
+
+.arrow-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: currentColor;
+}
+
+.sidebar-container {
+  width: 250px;
+  height: 100vh;
+  background-color: #f8f9fa;
+  border-right: 1px solid #e9ecef;
+  padding: 1rem;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-item {
+  padding: 0.75rem 1rem;
+  margin: 0.25rem 0;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s ease;
+  color: #495057;
+}
+
+.menu-item:hover {
+  background-color: #e9ecef;
+}
+
+.menu-item.active {
+  background-color: #e7f5ff;
+  color: #228be6;
+  font-weight: 500;
+}
+
+.menu-item.active .menu-icon {
+  color: #228be6;
+}
+
+.menu-icon {
+  width: 1.25rem;
+  margin-right: 0.75rem;
+  color: #868e96;
+}
+
+.menu-text {
+  font-size: 0.875rem;
+}
