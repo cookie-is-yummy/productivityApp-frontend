@@ -27,34 +27,46 @@ function Todos() {
     fetchTodos();
   }, []);
 
-  const handleAddTodo = async () => {
-    const todoPayload = {
-      ...newTodo,
-      tags: newTodo.tags.join(','),
-      duration: newTodo.duration || null
-    };
+// In the handleAddTodo function:
+const handleAddTodo = async () => {
+  try {
+    const res = await fetch('https://productivity-app-xyzfe-b5bed29e76a5.herokuapp.com/api/todos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: newTodo.text,
+        tags: newTodo.tags.join(','),
+        duration: newTodo.duration || null,
+        importance: newTodo.importance,
+        dueDate: newTodo.dueDate
+      })
+    });
 
-    try {
-      const res = await fetch('https://productivity-app-xyzfe-b5bed29e76a5.herokuapp.com/api/todos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(todoPayload)
-      });
-      const data = await res.json();
-      setTodos([...todos, data]);
-      setIsModalOpen(false);
-      setNewTodo({
-        text: '',
-        tags: [],
-        tagInput: '',
-        duration: '',
-        importance: 'medium',
-        dueDate: ''
-      });
-    } catch (error) {
-      console.error(error);
+    const data = await res.json();
+
+    if (!data.text) {
+      console.error('Server response missing text:', data);
+      return;
     }
-  };
+
+    // Add the new todo to the beginning of the list
+    setTodos(prev => [data, ...prev]);
+
+    // Reset form
+    setIsModalOpen(false);
+    setNewTodo({
+      text: '',
+      tags: [],
+      tagInput: '',
+      duration: '',
+      importance: 'medium',
+      dueDate: ''
+    });
+
+  } catch (error) {
+    console.error('Create todo failed:', error);
+  }
+};
 
   const toggleTodoCompletion = async (todoId, currentStatus) => {
     try {

@@ -319,3 +319,16 @@
   align-items: center;
   padding: 0.25rem;
 }
+
+/* Add this to your CSS */
+.todo-text {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.todo-text.completed {
+  color: var(--text-light);
+  opacity: 0.8;
+}
