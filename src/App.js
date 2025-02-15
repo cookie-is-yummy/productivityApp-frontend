@@ -4,6 +4,7 @@ import Home from './components/Home';
 import Todos from './components/Todos';
 import Goals from './components/Goals';
 import Routine from './components/Routine';
+import './styles/output.css';
 import './App.css';
 
 function App() {
