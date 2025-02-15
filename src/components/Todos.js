@@ -96,15 +96,11 @@ function Todos() {
       <header className="todos-header">
         <h2 className="todos-title">Tasks</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn btn-primary"
+            onClick={() => setIsModalOpen(true)}
+            className="btn btn-primary"
         >
-          <svg className="icon plus-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-              clipRule="evenodd"
-            />
+          <svg className="icon plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
           </svg>
           New Task
         </button>
@@ -112,27 +108,22 @@ function Todos() {
 
       <ul className="todos-list">
         {todos.map(todo => (
-          <li key={todo.id} className="todo-item">
-            <button
-              onClick={() => toggleTodoCompletion(todo.id, todo.completed)}
+            <li key={todo.id} className="todo-item">
+              <button
+                  onClick={() => toggleTodoCompletion(todo.id, todo.completed)}
               className={`todo-checkbox ${todo.completed ? 'completed' : ''}`}
             >
               {todo.completed && (
-                <svg className="icon check-icon" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+                  <svg className="icon check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
+                  </svg>
               )}
-            </button>
+              </button>
 
-            <div className="todo-content">
-              <p className={`todo-text ${todo.completed ? 'completed' : ''}`}>
-                {todo.text}
-              </p>
+              <div className="todo-content">
+                <p className={`todo-text ${todo.completed ? 'completed' : ''}`}>
+                  {todo.text}
+                </p>
               <div className="todo-meta">
                 {todo.tags && todo.tags.split(',').map((tag, index) => (
                   <span key={index} className="todo-tag">
@@ -140,21 +131,16 @@ function Todos() {
                   </span>
                 ))}
                 {todo.duration && (
-                  <span className="todo-duration">
-                    <svg className="icon duration-icon" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    {todo.duration}m
+                    <span className="todo-duration">
+                    <svg className="icon duration-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+</svg>
+                      {todo.duration}m
                   </span>
                 )}
               </div>
-            </div>
-          </li>
+              </div>
+            </li>
         ))}
       </ul>
 

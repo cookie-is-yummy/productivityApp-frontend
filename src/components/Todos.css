@@ -175,32 +175,53 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
+/* Update modal styles in Todos.css */
 .modal-title {
   font-size: 1.5rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  color: var(--text);
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-label {
   display: block;
   margin-bottom: 0.5rem;
+  color: var(--text);
+  font-size: 0.875rem;
   font-weight: 500;
+}
+
+.tag-input {
+  padding: 0.5rem;
   font-size: 0.875rem;
 }
 
+/* Ensure form inputs match main style */
 .form-input {
-  width: 100%;
-  padding: 0.75rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface);
   border: 2px solid var(--border);
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
+.form-input::placeholder {
+  color: hsl(0, 0%, 70%);
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
@@ -257,4 +278,44 @@
 
 .grid-cols-2 {
   grid-template-columns: repeat(2, 1fr);
+}
+
+/* Add to Todos.css */
+.plus-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.check-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke-width: 2;
+}
+
+.duration-icon {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+
+/* Add missing hover states */
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure consistent font sizes */
+.todos-container {
+  font-size: 16px;
+}
+
+.modal-panel {
+  font-size: 14px;
+}
+
+/* Fix tag input alignment */
+.tags-container {
+  align-items: center;
+  padding: 0.25rem;
 }
