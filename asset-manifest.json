@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/productivityApp-frontend/static/css/main.dafceb04.css",
-    "main.js": "/productivityApp-frontend/static/js/main.f7899cea.js",
+    "main.css": "/productivityApp-frontend/static/css/main.bd6a1217.css",
+    "main.js": "/productivityApp-frontend/static/js/main.45eac0ca.js",
     "index.html": "/productivityApp-frontend/index.html",
-    "main.dafceb04.css.map": "/productivityApp-frontend/static/css/main.dafceb04.css.map",
-    "main.f7899cea.js.map": "/productivityApp-frontend/static/js/main.f7899cea.js.map"
+    "main.bd6a1217.css.map": "/productivityApp-frontend/static/css/main.bd6a1217.css.map",
+    "main.45eac0ca.js.map": "/productivityApp-frontend/static/js/main.45eac0ca.js.map"
   },
   "entrypoints": [
-    "static/css/main.dafceb04.css",
-    "static/js/main.f7899cea.js"
+    "static/css/main.bd6a1217.css",
+    "static/js/main.45eac0ca.js"
   ]
 }
