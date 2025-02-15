@@ -14,7 +14,6 @@ function Todos() {
     dueDate: ''
   });
 
-  // Fetch todos from backend on component mount
   useEffect(() => {
     const fetchTodos = async () => {
       try {
@@ -42,7 +41,7 @@ function Todos() {
         body: JSON.stringify(todoPayload)
       });
       const data = await res.json();
-      setTodos([...todos, { ...data, completed: false }]);
+      setTodos([...todos, data]);
       setIsModalOpen(false);
       setNewTodo({
         text: '',
@@ -76,8 +75,7 @@ function Todos() {
 
   const handleTagInput = (e) => {
     const value = e.target.value;
-    // If the last character is a space or a comma, add the tag
-    if ([' ', ','].includes(value.slice(-1))) {
+    if (value.endsWith(',')) {
       const newTag = value.slice(0, -1).trim();
       if (newTag && !newTodo.tags.includes(newTag)) {
         setNewTodo(prev => ({
