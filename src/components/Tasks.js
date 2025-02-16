@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import axios from 'axios';
+import axios from '../axiosinstance';
 import '../styles/Tasks.css';
 
 const Tasks = () => {
@@ -21,7 +21,7 @@ const Tasks = () => {
   // Fetch tasks and organize by category
   useEffect(() => {
     const fetchTasks = async () => {
-      const response = await axios.get('/tasks');
+      const response = await axios.get('/api/tasks');
       const tasksData = response.data;
       const categorized = tasksData.reduce((acc, task) => {
         if (!task.parent_id) { // Only show parent tasks in categories
@@ -41,7 +41,7 @@ const Tasks = () => {
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
-    const response = await axios.post('/tasks', {
+    const response = await axios.post('/api/tasks', {
       ...newTask,
       tags: newTask.tags.split(','),
       completed: false,
@@ -64,7 +64,7 @@ const Tasks = () => {
 
     // Update category if moved between categories
     if (sourceCat !== destCat) {
-      await axios.put(`/tasks/${taskId}`, { category: destCat });
+      await axios.put(`/api/tasks/${taskId}`, { category: destCat });
       setCategories(prev => ({
         ...prev,
         [sourceCat]: prev[sourceCat].filter(t => t.id.toString() !== taskId),
@@ -140,7 +140,7 @@ const Tasks = () => {
                                   type="checkbox"
                                   checked={task.completed}
                                   onChange={async () => {
-                                    await axios.post(`/tasks/${task.id}/complete`);
+                                    await axios.post(`/api/tasks/${task.id}/complete`);
                                     setCategories(prev => ({
                                       ...prev,
                                       [category]: prev[category].map(t =>
@@ -153,7 +153,7 @@ const Tasks = () => {
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
-                                    await axios.delete(`/tasks/${task.id}`);
+                                    await axios.delete(`/api/tasks/${task.id}`);
                                     setCategories(prev => ({
                                       ...prev,
                                       [category]: prev[category].filter(t => t.id !== task.id)
