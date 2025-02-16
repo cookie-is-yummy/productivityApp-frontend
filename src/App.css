@@ -2,13 +2,13 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .app-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f5f6fa;
+  background-color: #f8f9fa;
 }
 
 .main-content {
@@ -23,9 +23,10 @@
 }
 
 .home-content h1 {
-  color: #2d3436;
+  color: #1a1a1a;
   margin-bottom: 2rem;
   font-weight: 600;
+  font-size: 2rem;
 }
 
 .cards-container {
@@ -38,21 +39,24 @@
   background: white;
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease;
+  border: 1px solid #f1f1f1;
 }
 
 .card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-3px);
 }
 
 .card h3 {
-  color: #2d3436;
+  color: #1a1a1a;
   margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .card p {
-  color: #636e72;
+  color: #666;
   font-size: 0.9rem;
   line-height: 1.5;
 }
