@@ -32,7 +32,7 @@ const Sidebar = ({ selectedMenu, setSelectedMenu }) => {
     return (
         <nav className="sidebar">
             <div className="sidebar-header">
-                <FontAwesomeIcon icon={faTh} style={{ fontSize: '32px', marginRight: '8px' }} />
+                <FontAwesomeIcon icon={faBook} style={{ fontSize: '32px', marginRight: '8px' }} />
                 <h2>Productivity App</h2>
             </div>
             <ul className="menu-items">
