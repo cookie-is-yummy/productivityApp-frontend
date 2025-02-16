@@ -34,26 +34,39 @@ const menuItems = [
     }
 ];
 
-const Sidebar = ({selectedMenu, setSelectedMenu}) => {
+
+const Sidebar = ({ selectedMenu, setSelectedMenu }) => {
     return (
         <nav className="sidebar">
             <div className="sidebar-header">
-                <h2>Dashboard</h2>
+                <svg className="app-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 4H8V8H4V4Z" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M4 14H8V18H4V14Z" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M14 4H18V8H14V4Z" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M14 14H18V18H14V14Z" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+                <h2>Productivity App</h2>
             </div>
             <ul className="menu-items">
-                {menuItems.map((item) => (
-                    <li
-                        key={item.id}
-                        className={`menu-item ${selectedMenu === item.id ? 'active' : ''}`}
-                        onClick={() => setSelectedMenu(item.id)}
-                    >
-                        <span className="menu-icon">{item.icon}</span>
-                        {item.label}
-                    </li>
+                {menuItems.map((group) => (
+                    <div key={group.category}>
+                        <div className="menu-category">{group.category}</div>
+                        {group.items.map((item) => (
+                            <li
+                                key={item.id}
+                                className={`menu-item ${selectedMenu === item.id ? 'active' : ''}`}
+                                onClick={() => setSelectedMenu(item.id)}
+                            >
+                                <span className="menu-icon">{item.icon}</span>
+                                {item.label}
+                            </li>
+                        ))}
+                    </div>
                 ))}
             </ul>
         </nav>
     );
 };
+
 
 export default Sidebar;
