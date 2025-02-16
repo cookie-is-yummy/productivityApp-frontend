@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import Sidebar from './components/Sidebar';
+import Tasks from './components/Tasks';
 
 const Home = () => (
   <div className="home-content">
@@ -29,6 +30,8 @@ function App() {
     switch (selectedMenu) {
       case 'home':
         return <Home />;
+      case 'tasks':
+        return <Tasks />;
       default:
         return <Home />;
     }

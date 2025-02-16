@@ -6,7 +6,7 @@ import {
   faCalendar,
   faSyncAlt,
   faGear,
-  faTh
+  faBook
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Sidebar.css';
 
