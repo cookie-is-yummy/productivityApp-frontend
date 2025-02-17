@@ -1,25 +1,35 @@
 /* Tasks.css */
 .tasks-container {
+  display: flex;
+  flex-direction: column;
   padding: 2rem;
   background-color: #f8f9fa;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 2rem;
 }
 
+
 .tasks-header {
-  grid-column: 1 / -1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .category-sidebar {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 200px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  background: white;
+  padding: 2rem;
+  border-right: 1px solid #f0f0f0;
 }
 
 .category-sidebar button {
@@ -38,12 +48,11 @@
 }
 
 .task-list {
+  padding: 2rem;
   background: white;
   border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-
 .task-item {
   padding: 1rem;
   margin-bottom: 0.5rem;
@@ -217,16 +226,6 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-.tasks-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
 
 .controls {
   display: flex;
@@ -264,29 +263,7 @@ input[type="number"] {
   background: #333;
 }
 
-.category-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 200px;
-  position: fixed;
-  left: 240px; /* Match main sidebar width */
-  top: 0;
-  bottom: 0;
-  background: white;
-  padding: 2rem;
-  border-right: 1px solid #f0f0f0;
-}
 
-.task-list {
-  margin-left: 240px; /* Offset for category sidebar */
-  padding: 2rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-/* Add these new styles */
 .complete-btn {
   width: 24px;
   height: 24px;
