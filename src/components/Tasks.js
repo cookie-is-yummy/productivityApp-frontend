@@ -7,6 +7,7 @@ import '../styles/Tasks.css';
 import axios from '../axiosinstance';
 
 const Tasks = () => {
+  const [selectedTask, setSelectedTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
