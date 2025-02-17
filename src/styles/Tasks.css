@@ -1,6 +1,5 @@
 /* Tasks.css */
 .tasks-container {
-  margin-left: 240px; /* Match sidebar width */
   padding: 2rem;
   background-color: #f8f9fa;
   min-height: 100vh;
@@ -22,7 +21,6 @@
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
   flex-grow: 1;
 }
 .category-select {
@@ -36,8 +34,38 @@
   background-repeat: no-repeat;
   background-position: right 1rem center;
   background-size: 1em;
+  width: 50%;
 }
 
+/* Tasks.css */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
+  transition: all 0.2s ease;
+  background-color: white;
+}
+
+select:hover {
+  border-color: #999;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+select:focus {
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 2px rgba(26,26,26,0.2);
+}
+
+.category-select {
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
 .category-sidebar {
   position: fixed;
   left: 240px; /* Align with main sidebar */
@@ -67,7 +95,6 @@
 }
 
 .task-list {
-  margin-left: 200px; /* Offset for category sidebar */
   padding: 2rem;
   background: white;
   border-radius: 12px;
@@ -84,8 +111,12 @@
   transition: all 0.2s ease;
   border: 1px solid #eee;
   position: relative;
+  z-index: 1
 }
 
+.task-item:hover {
+  z-index: 2;
+}
 .task-item {
   margin-bottom: 1rem;
 }
@@ -115,15 +146,15 @@
   margin-left: auto;
 }
 .context-menu {
-  position: absolute;
   right: 0;
   top: 100%;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   padding: 0.5rem;
-  z-index: 1000;
   min-width: 160px;
+  z-index: 1001;
+  position: absolute;
 }
 
 .context-menu button {
@@ -177,8 +208,8 @@
   gap: 1rem;
 }
 .filter-group {
+  margin-left: 1.5rem;
   display: flex;
-  gap: 0.5rem;
   background: #f8f8f8;
   padding: 0.5rem;
   border-radius: 8px;
@@ -194,6 +225,10 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 0.95rem;
+}
+
+.status-filter {
+  margin-right: 1rem;
 }
 
 /* Add responsive design */

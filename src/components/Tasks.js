@@ -58,6 +58,7 @@ const Tasks = () => {
 
   const handleSubmitTask = async () => {
     try {
+
       const response = editingTask
         ? await axios.put(`/api/tasks/${editingTask.id}`, newTask)
         : await axios.post('/api/tasks', newTask);
