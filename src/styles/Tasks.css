@@ -8,18 +8,23 @@
   flex-direction: column;
 }
 
-
 .tasks-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.5rem;
   margin-bottom: 2rem;
-  padding: 1rem;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
-
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-grow: 1;
+}
 .category-select {
   padding: 0.75rem 1.5rem;
   border: 1px solid #e0e0e0;
@@ -81,6 +86,13 @@
   position: relative;
 }
 
+.task-item {
+  margin-bottom: 1rem;
+}
+
+.subtasks {
+  margin-top: 1rem;
+}
 .task-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -97,6 +109,7 @@
   min-width: 0;
 }
 
+
 .task-actions {
   position: relative;
   margin-left: auto;
@@ -110,20 +123,24 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   padding: 0.5rem;
   z-index: 1000;
-  min-width: 140px;
+  min-width: 160px;
 }
 
 .context-menu button {
   padding: 0.75rem 1rem;
   width: 100%;
   text-align: left;
+  background: none;
+  border: none;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: none;
-  border: none;
   border-radius: 6px;
   transition: background 0.2s ease;
+}
+
+.context-menu button:hover {
+  background: #f8f8f8;
 }
 
 .subtasks {
@@ -141,6 +158,19 @@
   max-width: 600px;
 }
 
+.more-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s ease;
+}
+.more-btn:hover {
+  color: #1a1a1a;
+}
+
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -153,6 +183,19 @@
   padding: 0.5rem;
   border-radius: 8px;
 }
+
+.filter-group select {
+  margin-right: 1rem;
+}
+
+
+.status-filter, .sort-select {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
 /* Add responsive design */
 @media (max-width: 768px) {
   .tasks-container {
@@ -214,7 +257,7 @@ input, textarea, select {
 .new-task-button {
   background: #1a1a1a;
   color: white;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 2rem;
   border: none;
   border-radius: 8px;
   display: flex;

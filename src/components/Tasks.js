@@ -138,50 +138,43 @@ const Tasks = () => {
   return (
     <div className="tasks-container">
       <div className="tasks-header">
-        <select
-            value={filter.category}
-            onChange={(e) => setFilter({...filter, category: e.target.value})}
-            className="category-select"
-        >
-          {['inbox', 'personal', 'work', 'shopping'].map(category => (
-              <option key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </option>
-          ))}
-        </select>
-
-        <div className="controls">
+        <div className="header-left">
+          <select
+              value={filter.category}
+              onChange={(e) => setFilter({...filter, category: e.target.value})}
+              className="category-select"
+          >
+            {['inbox', 'personal', 'work', 'shopping'].map(category => (
+                <option key={category} value={category}>
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </option>
+            ))}
+          </select>
           <div className="filter-group">
-            <select onChange={(e) => setFilter({...filter, status: e.target.value})}>
-                <option value="all">All</option>
+            <select
+                onChange={(e) => setFilter({...filter, status: e.target.value})}
+                className="status-filter"
+            >
+              <option value="all">All Tasks</option>
               <option value="completed">Completed</option>
               <option value="active">Active</option>
-              </select>
-              <select onChange={(e) => setSortBy(e.target.value)}>
-              <option value="due_date">Due Date</option>
-              <option value="priority">Priority</option>
-              <option value="order">Order</option>
+            </select>
+            <select
+                onChange={(e) => setSortBy(e.target.value)}
+                className="sort-select"
+            >
+              <option value="due_date">Sort by Due Date</option>
+              <option value="priority">Sort by Priority</option>
+              <option value="order">Sort by Order</option>
             </select>
           </div>
-          <button
-              onClick={() => setShowModal(true)}
-              className="new-task-button"
-          >
-            <FontAwesomeIcon icon={faPlus}/> New Task
-          </button>
         </div>
-      </div>
-
-      <div className="category-sidebar">
-        {['inbox', 'personal', 'work', 'shopping'].map(category => (
-            <button
-                key={category}
-                className={filter.category === category ? 'active' : ''}
-                onClick={() => setFilter({...filter, category})}
-            >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </button>
-        ))}
+        <button
+            onClick={() => setShowModal(true)}
+            className="new-task-button"
+        >
+          <FontAwesomeIcon icon={faPlus}/> New Task
+        </button>
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
