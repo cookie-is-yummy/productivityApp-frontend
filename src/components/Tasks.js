@@ -28,14 +28,14 @@ const Tasks = () => {
     const fetchTasks = async () => {
       try {
         const response = await axios.get('/api/tasks');
-        const data = await response.json();
-        setTasks(data);
+        setTasks(response.data);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       }
     };
     fetchTasks();
   }, []);
+
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
@@ -44,12 +44,9 @@ const Tasks = () => {
     const [movedTask] = updatedTasks.splice(result.source.index, 1);
     updatedTasks.splice(result.destination.index, 0, movedTask);
 
-    // Update task order in backend
     try {
-      await axios.get(`/api/tasks/${movedTask.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_order: result.destination.index })
+      await axios.put(`/api/tasks/${movedTask.id}`, {
+        task_order: result.destination.index
       });
       setTasks(updatedTasks);
     } catch (error) {
@@ -58,24 +55,15 @@ const Tasks = () => {
   };
 
   const handleSubmitTask = async () => {
-    const url = editingTask
-      ? `/api/tasks/${editingTask.id}`
-      : '/api/tasks';
-
-    const method = editingTask ? 'PUT' : 'POST';
-
     try {
-      const response = await axios.get(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask)
-      });
-      const data = await response.json();
+      const response = editingTask
+        ? await axios.put(`/api/tasks/${editingTask.id}`, newTask)
+        : await axios.post('/api/tasks', newTask);
 
       if (editingTask) {
-        setTasks(tasks.map(task => task.id === editingTask.id ? data : task));
+        setTasks(tasks.map(task => task.id === editingTask.id ? response.data : task));
       } else {
-        setTasks([...tasks, data]);
+        setTasks([...tasks, response.data]);
       }
       closeModal();
     } catch (error) {
@@ -85,7 +73,7 @@ const Tasks = () => {
 
   const deleteTask = async (taskId) => {
     try {
-      await axios.get(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      await axios.delete(`/api/tasks/${taskId}`);
       setTasks(tasks.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
