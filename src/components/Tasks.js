@@ -27,7 +27,7 @@ const Tasks = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await axios.fetch('/api/tasks');
+        const response = await axios.get('/api/tasks');
         const data = await response.json();
         setTasks(data);
       } catch (error) {
@@ -46,7 +46,7 @@ const Tasks = () => {
 
     // Update task order in backend
     try {
-      await axios.fetch(`/api/tasks/${movedTask.id}`, {
+      await axios.get(`/api/tasks/${movedTask.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_order: result.destination.index })
@@ -65,7 +65,7 @@ const Tasks = () => {
     const method = editingTask ? 'PUT' : 'POST';
 
     try {
-      const response = await axios.fetch(url, {
+      const response = await axios.get(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTask)
@@ -85,7 +85,7 @@ const Tasks = () => {
 
   const deleteTask = async (taskId) => {
     try {
-      await axios.fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
+      await axios.get(`/api/tasks/${taskId}`, { method: 'DELETE' });
       setTasks(tasks.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
