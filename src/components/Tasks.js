@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Tasks.css';
+import axios from '../axiosinstance';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
@@ -26,7 +27,7 @@ const Tasks = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const response = await fetch('https://your-heroku-app.herokuapp.com/api/tasks');
+        const response = await axios.fetch('/api/tasks');
         const data = await response.json();
         setTasks(data);
       } catch (error) {
@@ -45,7 +46,7 @@ const Tasks = () => {
 
     // Update task order in backend
     try {
-      await fetch(`https://your-heroku-app.herokuapp.com/api/tasks/${movedTask.id}`, {
+      await axios.fetch(`/api/tasks/${movedTask.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ task_order: result.destination.index })
@@ -58,13 +59,13 @@ const Tasks = () => {
 
   const handleSubmitTask = async () => {
     const url = editingTask
-      ? `https://your-heroku-app.herokuapp.com/api/tasks/${editingTask.id}`
-      : 'https://your-heroku-app.herokuapp.com/api/tasks';
+      ? `/api/tasks/${editingTask.id}`
+      : '/api/tasks';
 
     const method = editingTask ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(url, {
+      const response = await axios.fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTask)
@@ -84,7 +85,7 @@ const Tasks = () => {
 
   const deleteTask = async (taskId) => {
     try {
-      await fetch(`https://your-heroku-app.herokuapp.com/api/tasks/${taskId}`, { method: 'DELETE' });
+      await axios.fetch(`/api/tasks/${taskId}`, { method: 'DELETE' });
       setTasks(tasks.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error deleting task:', error);
