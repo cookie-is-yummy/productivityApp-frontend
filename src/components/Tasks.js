@@ -247,55 +247,91 @@ const Tasks = () => {
         <div className="modal">
           <div className="modal-content">
             <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
-            <input
-              type="text"
-              placeholder="Task title"
-              value={newTask.title}
-              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-            />
-            <textarea
-              placeholder="Description"
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-            />
-            <div className="form-row">
-              <input
-                type="date"
-                value={newTask.due_date}
-                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-              />
-              <select
-                value={newTask.priority}
-                onChange={(e) => setNewTask({ ...newTask, priority: parseInt(e.target.value) })}
-              >
-                <option value={1}>High Priority</option>
-                <option value={2}>Medium Priority</option>
-                <option value={3}>Low Priority</option>
-              </select>
-            </div>
-            <div className="form-row">
-              <select
-                value={newTask.category}
-                onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
-              >
-                {['inbox', 'personal', 'work', 'shopping'].map(category => (
-                  <option key={category} value={category}>
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </option>
-                ))}
-              </select>
+            <div className="form-group">
+              <label>Task Title</label>
               <input
                 type="text"
-                placeholder="Tags (comma separated)"
+                placeholder="Enter task title"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                placeholder="Add task description"
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Due Date</label>
+                <input
+                  type="date"
+                  value={newTask.due_date}
+                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Duration (minutes)</label>
+                <input
+                  type="number"
+                  placeholder="60"
+                  value={newTask.duration}
+                  onChange={(e) => setNewTask({ ...newTask, duration: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>Priority</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: parseInt(e.target.value) })}
+                >
+                  <option value={1}>High Priority</option>
+                  <option value={2}>Medium Priority</option>
+                  <option value={3}>Low Priority</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Category</label>
+                <select
+                  value={newTask.category}
+                  onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
+                >
+                  {['inbox', 'personal', 'work', 'shopping'].map(category => (
+                    <option key={category} value={category}>
+                      {category.charAt(0).toUpperCase() + category.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Tags</label>
+              <input
+                type="text"
+                placeholder="comma, separated, tags"
                 value={newTask.tags.join(', ')}
                 onChange={(e) => setNewTask({ ...newTask, tags: e.target.value.split(', ') })}
               />
             </div>
+
             <div className="modal-actions">
-              <button onClick={handleSubmitTask}>
+              <button className="btn-primary" onClick={handleSubmitTask}>
                 {editingTask ? 'Save Changes' : 'Create Task'}
               </button>
-              <button onClick={closeModal}>Cancel</button>
+              <button className="btn-secondary" onClick={closeModal}>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
