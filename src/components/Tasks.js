@@ -1,182 +1,316 @@
+// Tasks.js
 import React, { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import axios from '../axiosinstance';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Tasks.css';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
-  const [categories, setCategories] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
     due_date: '',
-    duration: 30,
-    priority: 3,
-    tags: '',
-    category: 'General'
+    category: 'inbox',
+    tags: [],
+    priority: 2,
+    subtasks: [],
+    parent_id: null
   });
-  const [filter, setFilter] = useState('');
-  const [expandedCategories, setExpandedCategories] = useState({});
+  const [filter, setFilter] = useState({ category: 'inbox', status: 'all' });
+  const [sortBy, setSortBy] = useState('due_date');
 
-  // Fetch tasks and organize by category
+  // Fetch tasks from backend
   useEffect(() => {
     const fetchTasks = async () => {
-      const response = await axios.get('/api/tasks');
-      const tasksData = response.data;
-      const categorized = tasksData.reduce((acc, task) => {
-        if (!task.parent_id) { // Only show parent tasks in categories
-          acc[task.category] = acc[task.category] || [];
-          acc[task.category].push(task);
-        }
-        return acc;
-      }, {});
-      setCategories(categorized);
-      setExpandedCategories(Object.keys(categorized).reduce((acc, cat) => {
-        acc[cat] = true;
-        return acc;
-      }, {}));
+      try {
+        const response = await fetch('https://your-heroku-app.herokuapp.com/api/tasks');
+        const data = await response.json();
+        setTasks(data);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      }
     };
     fetchTasks();
   }, []);
 
-  const handleCreateTask = async (e) => {
-    e.preventDefault();
-    const response = await axios.post('/api/tasks', {
-      ...newTask,
-      tags: newTask.tags.split(','),
-      completed: false,
-      is_subtask: false
-    });
-    setCategories(prev => ({
-      ...prev,
-      [newTask.category]: [...(prev[newTask.category] || []), response.data]
-    }));
-    setNewTask({ ...newTask, title: '', description: '' });
-  };
-
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
-    const taskId = result.draggableId;
-    const sourceCat = result.source.droppableId;
-    const destCat = result.destination.droppableId;
-    const task = categories[sourceCat].find(t => t.id.toString() === taskId);
+    const updatedTasks = Array.from(tasks);
+    const [movedTask] = updatedTasks.splice(result.source.index, 1);
+    updatedTasks.splice(result.destination.index, 0, movedTask);
 
-    // Update category if moved between categories
-    if (sourceCat !== destCat) {
-      await axios.put(`/api/tasks/${taskId}`, { category: destCat });
-      setCategories(prev => ({
-        ...prev,
-        [sourceCat]: prev[sourceCat].filter(t => t.id.toString() !== taskId),
-        [destCat]: [...(prev[destCat] || []), { ...task, category: destCat }]
-      }));
+    // Update task order in backend
+    try {
+      await fetch(`https://your-heroku-app.herokuapp.com/api/tasks/${movedTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_order: result.destination.index })
+      });
+      setTasks(updatedTasks);
+    } catch (error) {
+      console.error('Error updating task order:', error);
     }
   };
+
+  const handleSubmitTask = async () => {
+    const url = editingTask
+      ? `https://your-heroku-app.herokuapp.com/api/tasks/${editingTask.id}`
+      : 'https://your-heroku-app.herokuapp.com/api/tasks';
+
+    const method = editingTask ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask)
+      });
+      const data = await response.json();
+
+      if (editingTask) {
+        setTasks(tasks.map(task => task.id === editingTask.id ? data : task));
+      } else {
+        setTasks([...tasks, data]);
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Error saving task:', error);
+    }
+  };
+
+  const deleteTask = async (taskId) => {
+    try {
+      await fetch(`https://your-heroku-app.herokuapp.com/api/tasks/${taskId}`, { method: 'DELETE' });
+      setTasks(tasks.filter(task => task.id !== taskId));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
+  const openEditModal = (task) => {
+    setEditingTask(task);
+    setNewTask({
+      title: task.title,
+      description: task.description,
+      due_date: task.due_date,
+      category: task.category,
+      tags: task.tags,
+      priority: task.priority,
+      subtasks: task.subtasks,
+      parent_id: task.parent_id
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingTask(null);
+    setNewTask({
+      title: '',
+      description: '',
+      due_date: '',
+      category: 'inbox',
+      tags: [],
+      priority: 2,
+      subtasks: [],
+      parent_id: null
+    });
+  };
+
+  const filteredTasks = tasks
+    .filter(task =>
+      (filter.category === 'all' || task.category === filter.category) &&
+      (filter.status === 'all' ||
+       (filter.status === 'completed' ? task.completed : !task.completed))
+    )
+    .sort((a, b) => {
+      if (sortBy === 'due_date') return new Date(a.due_date) - new Date(b.due_date);
+      if (sortBy === 'priority') return a.priority - b.priority;
+      return a.task_order - b.task_order;
+    });
 
   return (
     <div className="tasks-container">
       <div className="tasks-header">
-        <input
-          type="text"
-          placeholder="Filter tasks..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
+        <h1>{filter.category.charAt(0).toUpperCase() + filter.category.slice(1)}</h1>
+        <div className="controls">
+          <select onChange={(e) => setFilter({ ...filter, status: e.target.value })}>
+            <option value="all">All</option>
+            <option value="completed">Completed</option>
+            <option value="active">Active</option>
+          </select>
+          <select onChange={(e) => setSortBy(e.target.value)}>
+            <option value="due_date">Sort by Due Date</option>
+            <option value="priority">Sort by Priority</option>
+            <option value="order">Sort by Order</option>
+          </select>
+          <button onClick={() => setShowModal(true)}>
+            <FontAwesomeIcon icon={faPlus} /> New Task
+          </button>
+        </div>
+      </div>
 
-        <form onSubmit={handleCreateTask} className="task-form">
-          <input
-            type="text"
-            placeholder="Task title"
-            value={newTask.title}
-            onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-            required
-          />
-          <button type="submit">Create Task</button>
-        </form>
+      <div className="category-sidebar">
+        {['inbox', 'personal', 'work', 'shopping'].map(category => (
+          <button
+            key={category}
+            className={filter.category === category ? 'active' : ''}
+            onClick={() => setFilter({ ...filter, category })}
+          >
+            {category.charAt(0).toUpperCase() + category.slice(1)}
+          </button>
+        ))}
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="categories-container">
-          {Object.entries(categories).map(([category, tasks]) => (
-            <div key={category} className="category-column">
-              <div className="category-header">
-                <h3>{category}</h3>
-                <button
-                  onClick={() => setExpandedCategories(prev => ({
-                    ...prev,
-                    [category]: !prev[category]
-                  }))}
-                >
-                  {expandedCategories[category] ? '▼' : '▶'}
-                </button>
-              </div>
-
-              {expandedCategories[category] && (
-                <Droppable droppableId={category}>
+        <Droppable droppableId="tasks">
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="task-list"
+            >
+              {filteredTasks.map((task, index) => (
+                <Draggable key={task.id} draggableId={String(task.id)} index={index}>
                   {(provided) => (
                     <div
-                      {...provided.droppableProps}
                       ref={provided.innerRef}
-                      className="tasks-list"
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`task-item ${task.completed ? 'completed' : ''}`}
                     >
-                      {tasks.filter(task =>
-                        task.title.toLowerCase().includes(filter.toLowerCase()) ||
-                        task.description.toLowerCase().includes(filter.toLowerCase())
-                      ).map((task, index) => (
-                        <Draggable
-                          key={task.id}
-                          draggableId={task.id.toString()}
-                          index={index}
+                      <div className="task-main">
+                        <button
+                          className="complete-btn"
+                          onClick={() => toggleComplete(task.id)}
                         >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="task-card"
-                            >
-                              <div className="task-header">
-                                <input
-                                  type="checkbox"
-                                  checked={task.completed}
-                                  onChange={async () => {
-                                    await axios.post(`/api/tasks/${task.id}/complete`);
-                                    setCategories(prev => ({
-                                      ...prev,
-                                      [category]: prev[category].map(t =>
-                                        t.id === task.id ? { ...t, completed: true } : t
-                                      )
-                                    }));
-                                  }}
-                                />
-                                <span className="task-title">{task.title}</span>
-                                <button
-                                  onClick={async (e) => {
-                                    e.stopPropagation();
-                                    await axios.delete(`/api/tasks/${task.id}`);
-                                    setCategories(prev => ({
-                                      ...prev,
-                                      [category]: prev[category].filter(t => t.id !== task.id)
-                                    }));
-                                  }}
-                                >
-                                  ✕
+                          <FontAwesomeIcon icon={faCheck} />
+                        </button>
+                        <div className="task-info">
+                          <h3>{task.title}</h3>
+                          <p>{task.description}</p>
+                          <div className="task-meta">
+                            {task.due_date && (
+                              <span className="due-date">
+                                <FontAwesomeIcon icon={faCalendarDays} />
+                                {new Date(task.due_date).toLocaleDateString()}
+                              </span>
+                            )}
+                            {task.tags.length > 0 && (
+                              <span className="tags">
+                                <FontAwesomeIcon icon={faTags} />
+                                {task.tags.join(', ')}
+                              </span>
+                            )}
+                            <span className="category">{task.category}</span>
+                          </div>
+                        </div>
+                        <div className="task-actions">
+                          <div
+                            className="more-btn"
+                            onMouseEnter={() => setSelectedTask(task.id)}
+                            onMouseLeave={() => setSelectedTask(null)}
+                          >
+                            <FontAwesomeIcon icon={faEllipsisVertical} />
+                            {selectedTask === task.id && (
+                              <div className="context-menu">
+                                <button onClick={() => openEditModal(task)}>
+                                  <FontAwesomeIcon icon={faEdit} /> Edit
+                                </button>
+                                <button onClick={() => deleteTask(task.id)}>
+                                  <FontAwesomeIcon icon={faTrash} /> Delete
                                 </button>
                               </div>
-                              <p className="task-description">{task.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {task.subtasks.length > 0 && (
+                        <div className="subtasks">
+                          {task.subtasks.map(subtask => (
+                            <div key={subtask.id} className="subtask">
+                              <button
+                                className="complete-btn small"
+                                onClick={() => toggleComplete(subtask.id)}
+                              >
+                                <FontAwesomeIcon icon={faCheck} />
+                              </button>
+                              <span>{subtask.title}</span>
                             </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
-                </Droppable>
-              )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
             </div>
-          ))}
-        </div>
+          )}
+        </Droppable>
       </DragDropContext>
+
+      {showModal && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
+            <input
+              type="text"
+              placeholder="Task title"
+              value={newTask.title}
+              onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+            />
+            <textarea
+              placeholder="Description"
+              value={newTask.description}
+              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+            />
+            <div className="form-row">
+              <input
+                type="date"
+                value={newTask.due_date}
+                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+              />
+              <select
+                value={newTask.priority}
+                onChange={(e) => setNewTask({ ...newTask, priority: parseInt(e.target.value) })}
+              >
+                <option value={1}>High Priority</option>
+                <option value={2}>Medium Priority</option>
+                <option value={3}>Low Priority</option>
+              </select>
+            </div>
+            <div className="form-row">
+              <select
+                value={newTask.category}
+                onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
+              >
+                {['inbox', 'personal', 'work', 'shopping'].map(category => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Tags (comma separated)"
+                value={newTask.tags.join(', ')}
+                onChange={(e) => setNewTask({ ...newTask, tags: e.target.value.split(', ') })}
+              />
+            </div>
+            <div className="modal-actions">
+              <button onClick={handleSubmitTask}>
+                {editingTask ? 'Save Changes' : 'Create Task'}
+              </button>
+              <button onClick={closeModal}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
