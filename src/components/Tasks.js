@@ -11,6 +11,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [showContextMenu, setShowContextMenu] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -81,6 +82,17 @@ const Tasks = () => {
     }
   };
 
+  const toggleComplete = async (taskId) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      const updatedTask = {...task, completed: !task.completed};
+      await axios.put(`/api/tasks/${taskId}`, updatedTask);
+      setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+    } catch (error) {
+      console.error('Error toggling completion:', error);
+    }
+  };
+
   const openEditModal = (task) => {
     setEditingTask(task);
     setNewTask({
@@ -126,57 +138,73 @@ const Tasks = () => {
   return (
     <div className="tasks-container">
       <div className="tasks-header">
-        <h1>{filter.category.charAt(0).toUpperCase() + filter.category.slice(1)}</h1>
+        <select
+            value={filter.category}
+            onChange={(e) => setFilter({...filter, category: e.target.value})}
+            className="category-select"
+        >
+          {['inbox', 'personal', 'work', 'shopping'].map(category => (
+              <option key={category} value={category}>
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </option>
+          ))}
+        </select>
+
         <div className="controls">
-          <select onChange={(e) => setFilter({ ...filter, status: e.target.value })}>
-            <option value="all">All</option>
-            <option value="completed">Completed</option>
-            <option value="active">Active</option>
-          </select>
-          <select onChange={(e) => setSortBy(e.target.value)}>
-            <option value="due_date">Sort by Due Date</option>
-            <option value="priority">Sort by Priority</option>
-            <option value="order">Sort by Order</option>
-          </select>
-          <button onClick={() => setShowModal(true)}>
-            <FontAwesomeIcon icon={faPlus} /> New Task
+          <div className="filter-group">
+            <select onChange={(e) => setFilter({...filter, status: e.target.value})}>
+                <option value="all">All</option>
+              <option value="completed">Completed</option>
+              <option value="active">Active</option>
+              </select>
+              <select onChange={(e) => setSortBy(e.target.value)}>
+              <option value="due_date">Due Date</option>
+              <option value="priority">Priority</option>
+              <option value="order">Order</option>
+            </select>
+          </div>
+          <button
+              onClick={() => setShowModal(true)}
+              className="new-task-button"
+          >
+            <FontAwesomeIcon icon={faPlus}/> New Task
           </button>
         </div>
       </div>
 
       <div className="category-sidebar">
         {['inbox', 'personal', 'work', 'shopping'].map(category => (
-          <button
-            key={category}
-            className={filter.category === category ? 'active' : ''}
-            onClick={() => setFilter({ ...filter, category })}
-          >
-            {category.charAt(0).toUpperCase() + category.slice(1)}
-          </button>
+            <button
+                key={category}
+                className={filter.category === category ? 'active' : ''}
+                onClick={() => setFilter({...filter, category})}
+            >
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </button>
         ))}
       </div>
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="tasks">
           {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="task-list"
-            >
-              {filteredTasks.map((task, index) => (
-                <Draggable key={task.id} draggableId={String(task.id)} index={index}>
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={`task-item ${task.completed ? 'completed' : ''}`}
-                    >
-                      <div className="task-main">
-                        <button
-                          className="complete-btn"
-                          onClick={() => toggleComplete(task.id)}
+              <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="task-list"
+              >
+                {filteredTasks.map((task, index) => (
+                    <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+                      {(provided) => (
+                          <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`task-item ${task.completed ? 'completed' : ''}`}
+                          >
+                            <div className="task-main">
+                              <button
+                                  className="complete-btn"
+                                  onClick={() => toggleComplete(task.id)}
                         >
                           <FontAwesomeIcon icon={faCheck} />
                         </button>
@@ -199,52 +227,65 @@ const Tasks = () => {
                             <span className="category">{task.category}</span>
                           </div>
                         </div>
-                        <div className="task-actions">
-                          <div
-                            className="more-btn"
-                            onMouseEnter={() => setSelectedTask(task.id)}
-                            onMouseLeave={() => setSelectedTask(null)}
-                          >
-                            <FontAwesomeIcon icon={faEllipsisVertical} />
-                            {selectedTask === task.id && (
-                              <div className="context-menu">
-                                <button onClick={() => openEditModal(task)}>
-                                  <FontAwesomeIcon icon={faEdit} /> Edit
+                              <div className="task-actions">
+                                <button
+                                    className="more-btn"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShowContextMenu(showContextMenu === task.id ? null : task.id);
+                                    }}
+                                >
+                                  <FontAwesomeIcon icon={faEllipsisVertical}/>
                                 </button>
-                                <button onClick={() => deleteTask(task.id)}>
-                                  <FontAwesomeIcon icon={faTrash} /> Delete
-                                </button>
+                                {showContextMenu === task.id && (
+                                    <div className="context-menu">
+                                      <button
+                                          onClick={() => {
+                                            openEditModal(task);
+                                            setShowContextMenu(null);
+                                          }}
+                                      >
+                                        <FontAwesomeIcon icon={faEdit}/> Edit
+                                      </button>
+                                      <button
+                                          onClick={() => {
+                                            deleteTask(task.id);
+                                            setShowContextMenu(null);
+                                          }}
+                                      >
+                                        <FontAwesomeIcon icon={faTrash}/> Delete
+                                      </button>
+                                    </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                            </div>
                       {task.subtasks.length > 0 && (
                         <div className="subtasks">
-                          {task.subtasks.map(subtask => (
-                            <div key={subtask.id} className="subtask">
-                              <button
-                                className="complete-btn small"
-                                onClick={() => toggleComplete(subtask.id)}
-                              >
-                                <FontAwesomeIcon icon={faCheck} />
-                              </button>
-                              <span>{subtask.title}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      {task.subtasks.map(subtask => (
+                        <div key={subtask.id} className="subtask">
+                      <button
+                          className="complete-btn small"
+                          onClick={() => toggleComplete(subtask.id)}
+                      >
+                        <FontAwesomeIcon icon={faCheck}/>
+                      </button>
+                      <span>{subtask.title}</span>
                     </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
+                ))}
+              </div>
           )}
-        </Droppable>
-      </DragDropContext>
+            </div>
+            )}
+        </Draggable>
+        ))}
+        {provided.placeholder}
+    </div>
+)}
+</Droppable>
+</DragDropContext>
 
-      {showModal && (
+  {
+    showModal && (
         <div className="modal">
           <div className="modal-content">
             <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
