@@ -13,6 +13,8 @@ const Tasks = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [showContextMenu, setShowContextMenu] = useState(null);
+  const [expandedTasks, setExpandedTasks] = useState([]);
+  const [editingField, setEditingField] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -61,18 +63,27 @@ const Tasks = () => {
       }
       return;
     }
-    const updatedTasks = Array.from(tasks);
-    const [movedTask] = updatedTasks.splice(result.source.index, 1);
-    updatedTasks.splice(result.destination.index, 0, movedTask);
+    const newTasks = Array.from(tasks);
+    const [movedTask] = newTasks.splice(result.source.index, 1);
+    newTasks.splice(result.destination.index, 0, movedTask);
+    setTasks(newTasks);
 
     try {
       await axios.put(`/api/tasks/${movedTask.id}`, {
-        task_order: result.destination.index
+        task_order: result.destination.index,
+        parent_id: result.destination.droppableId !== 'tasks' ?
+          result.destination.droppableId : null
       });
-      setTasks(updatedTasks);
     } catch (error) {
-      console.error('Error updating task order:', error);
+      setTasks(tasks); // Revert on error
     }
+  };
+
+
+  const handleTagChange = (taskId, newTags) => {
+    setTasks(tasks.map(task =>
+      task.id === taskId ? {...task, tags: newTags} : task
+    ));
   };
 
   const handleSubmitTask = async () => {
@@ -159,9 +170,9 @@ const Tasks = () => {
     (tagFilter === '' || task.tags.some(tag => tag.toLowerCase().includes(tagFilter.toLowerCase())))
   )
     .sort((a, b) => {
-      if (sortBy === 'due_date') return new Date(a.due_date) - new Date(b.due_date);
-      if (sortBy === 'priority') return a.priority - b.priority;
-      return a.task_order - b.task_order;
+      if (a.task_order !== b.task_order) return a.task_order - b.task_order;
+      if (a.due_date !== b.due_date) return new Date(a.due_date) - new Date(b.due_date);
+      return a.priority - b.priority;
     });
 
   return (
@@ -230,6 +241,14 @@ const Tasks = () => {
                               {...provided.dragHandleProps}
                               className={`task-item ${task.completed ? 'completed' : ''}`}
                           >
+                            {task.subtasks.length > 0 && (
+                              <div className="progress-bar">
+                                <div
+                                  className="progress-fill"
+                                  style={{ width: `${getProgress(task.subtasks)}%` }}
+                                />
+                              </div>
+                            )}
                             <div className="task-main">
                               <button
                                   className="complete-btn"
@@ -260,7 +279,22 @@ const Tasks = () => {
                             <span className="category">{task.category}</span>
                           </div>
                         </div>
+
                               <div className="task-actions">
+                                {task.subtasks.length > 0 && (
+      <button
+        className={`subtask-indicator ${
+          !expandedTasks.includes(task.id) ? 'collapsed' : ''
+        }`}
+        onClick={() => setExpandedTasks(prev =>
+          prev.includes(task.id)
+            ? prev.filter(id => id !== task.id)
+            : [...prev, task.id]
+        )}
+      >
+        ▼
+      </button>
+    )}
                                 <button
                                     className="more-btn"
                                     onClick={(e) => {

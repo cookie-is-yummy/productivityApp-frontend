@@ -474,3 +474,45 @@ input[type="number"] {
   padding: 0.25rem 0.5rem;
   border-radius: 6px;
 }
+
+.subtask-indicator {
+  margin-left: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.subtask-indicator.collapsed {
+  transform: rotate(-90deg);
+}
+
+.progress-bar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin-top: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Inline editing */
+.editable-field {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.editable-field:hover {
+  background: #f0f0f0;
+}
+
+.editable-input {
+  padding: 2px 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font: inherit;
+}
