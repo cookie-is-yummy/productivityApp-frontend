@@ -34,7 +34,7 @@
   background-repeat: no-repeat;
   background-position: right 1rem center;
   background-size: 1em;
-  width: 50%;
+  width: 100%;
 }
 
 /* Tasks.css */
@@ -47,6 +47,7 @@ select {
   padding-right: 2.5rem;
   transition: all 0.2s ease;
   background-color: white;
+  border-radius: 8px;
 }
 
 select:hover {
@@ -116,10 +117,27 @@ select:focus {
 
 .task-item:hover {
   z-index: 2;
+  background: #f8f8f8 !important;
+  transform: none;
 }
 .task-item {
   margin-bottom: 1rem;
 }
+
+
+.task-meta .tags {
+  background: #e0f2fe !important;
+  color: #0369a1;
+}
+.task-meta .tags[data-tag="urgent"] { background: #fee2e2 !important; color: #b91c1c; }
+.task-meta .tags[data-tag="home"] { background: #dcfce7 !important; color: #15803d; }
+/* Add more tag colors as needed */
+
+/* Deadline colors */
+.due-date[data-deadline="1-day"] { background: #fee2e2; color: #dc2626; }
+.due-date[data-deadline="1-week"] { background: #fef9c3; color: #ca8a04; }
+.due-date[data-deadline="2-weeks"] { background: #dcfce7; color: #15803d; }
+
 
 .subtasks {
   margin-top: 1rem;
@@ -129,6 +147,22 @@ select:focus {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.modal-content {
+  padding-bottom: 2.5rem;
+}
+
+/* Subtask drop target */
+.subtask-dropzone {
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0.5rem 0;
+  transition: all 0.2s;
+}
+.subtask-dropzone.active {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
 .task-main {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ import axios from '../axiosinstance';
 
 const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
+  const [tagFilter, setTagFilter] = useState('');
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -41,7 +42,25 @@ const Tasks = () => {
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
+    if (result.source.droppableId !== result.destination.droppableId) {
+      const task = tasks.find(t => t.id === result.draggableId);
+      const parentTask = tasks.find(t => t.id === result.destination.droppableId);
 
+      if (task && parentTask) {
+        try {
+          await axios.put(`/api/tasks/${task.id}`, {
+            parent_id: parentTask.id
+          });
+          setTasks(tasks.map(t =>
+            t.id === task.id ? {...t, parent_id: parentTask.id} :
+            t.id === parentTask.id ? {...t, subtasks: [...t.subtasks, task]} : t
+          ));
+        } catch (error) {
+          console.error('Error moving subtask:', error);
+        }
+      }
+      return;
+    }
     const updatedTasks = Array.from(tasks);
     const [movedTask] = updatedTasks.splice(result.source.index, 1);
     updatedTasks.splice(result.destination.index, 0, movedTask);
@@ -124,12 +143,21 @@ const Tasks = () => {
     });
   };
 
+  const getDeadlineType = (dueDate) => {
+    const diff = Math.floor((new Date(dueDate) - new Date()) / (1000 * 60 * 60 * 24));
+    if (diff <= 1) return '1-day';
+    if (diff <= 7) return '1-week';
+    if (diff <= 14) return '2-weeks';
+    return '';
+  };
+
+
   const filteredTasks = tasks
-    .filter(task =>
-      (filter.category === 'all' || task.category === filter.category) &&
-      (filter.status === 'all' ||
-       (filter.status === 'completed' ? task.completed : !task.completed))
-    )
+  .filter(task =>
+    (filter.category === 'all' || task.category === filter.category) &&
+    (filter.status === 'all' || (filter.status === 'completed' ? task.completed : !task.completed)) &&
+    (tagFilter === '' || task.tags.some(tag => tag.toLowerCase().includes(tagFilter.toLowerCase())))
+  )
     .sort((a, b) => {
       if (sortBy === 'due_date') return new Date(a.due_date) - new Date(b.due_date);
       if (sortBy === 'priority') return a.priority - b.priority;
@@ -168,6 +196,13 @@ const Tasks = () => {
               <option value="priority">Sort by Priority</option>
               <option value="order">Sort by Order</option>
             </select>
+            <input
+                type="text"
+                placeholder="Filter by tags..."
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className="tag-filter-input"
+            />
           </div>
         </div>
         <button
@@ -207,13 +242,17 @@ const Tasks = () => {
                           <p>{task.description}</p>
                           <div className="task-meta">
                             {task.due_date && (
-                              <span className="due-date">
-                                <FontAwesomeIcon icon={faCalendarDays} />
-                                {new Date(task.due_date).toLocaleDateString()}
-                              </span>
+                                <span
+                                    className="due-date"
+                                    data-deadline={getDeadlineType(task.due_date)}
+                                >
+                                  <FontAwesomeIcon icon={faCalendarDays}/>
+                                                                  {new Date(task.due_date).toLocaleDateString()}
+                                </span>
+
                             )}
                             {task.tags.length > 0 && (
-                              <span className="tags">
+                              <span className="tags" data-tag={task.tags[0].toLowerCase()}>
                                 <FontAwesomeIcon icon={faTags} />
                                 {task.tags.join(', ')}
                               </span>
