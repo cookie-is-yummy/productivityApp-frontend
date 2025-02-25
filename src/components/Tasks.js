@@ -1,10 +1,177 @@
 // Tasks.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
+import {
+  faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays,
+  faEdit, faTrash, faCaretDown, faPalette, faFolder
+} from '@fortawesome/free-solid-svg-icons';
 import '../styles/Tasks.css';
 import axios from '../axiosinstance';
+
+// Custom Dropdown Component
+const CustomDropdown = ({ value, onChange, options, placeholder, className }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className={`custom-dropdown ${className || ''}`} ref={dropdownRef}>
+      <div
+        className="dropdown-selected"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {options.find(opt => opt.value === value)?.label || placeholder || 'Select...'}
+        <FontAwesomeIcon icon={faCaretDown} className={`dropdown-caret ${isOpen ? 'open' : ''}`} />
+      </div>
+
+      {isOpen && (
+        <div className="dropdown-menu">
+          {options.map(option => (
+            <div
+              key={option.value}
+              className={`dropdown-item ${option.value === value ? 'selected' : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+            >
+              {option.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Tag Component with Click Handling
+const Tag = ({ tag, onClick }) => {
+  return (
+    <span
+      className="tag"
+      data-tag={tag.toLowerCase()}
+      onClick={onClick}
+    >
+      {tag}
+    </span>
+  );
+};
+
+// Color Picker Component for Tags
+const ColorPicker = ({ onSelect, onClose }) => {
+  const colors = [
+    { name: 'red', hex: '#fee2e2' },
+    { name: 'orange', hex: '#fed7aa' },
+    { name: 'yellow', hex: '#fef9c3' },
+    { name: 'green', hex: '#dcfce7' },
+    { name: 'blue', hex: '#e0f2fe' },
+    { name: 'purple', hex: '#f3e8ff' },
+    { name: 'pink', hex: '#fce7f3' },
+  ];
+
+  return (
+    <div className="color-picker">
+      <div className="color-picker-header">
+        <h4>Choose a color</h4>
+        <button className="close-btn" onClick={onClose}>×</button>
+      </div>
+      <div className="color-options">
+        {colors.map(color => (
+          <div
+            key={color.name}
+            className="color-option"
+            style={{ backgroundColor: color.hex }}
+            onClick={() => {
+              onSelect(color.name);
+              onClose();
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Category Management Component
+const CategoryManager = ({ categories, onAddCategory, onClose }) => {
+  const [newCategory, setNewCategory] = useState('');
+  const [parentCategory, setParentCategory] = useState('');
+
+  const handleSubmit = () => {
+    if (!newCategory.trim()) return;
+
+    onAddCategory(
+      newCategory.trim(),
+      parentCategory ? parentCategory : null
+    );
+    setNewCategory('');
+  };
+
+  return (
+    <div className="category-manager">
+      <div className="category-manager-header">
+        <h4>Manage Categories</h4>
+        <button className="close-btn" onClick={onClose}>×</button>
+      </div>
+
+      <div className="category-form">
+        <div className="form-group">
+          <label>New Category</label>
+          <input
+            type="text"
+            value={newCategory}
+            onChange={e => setNewCategory(e.target.value)}
+            placeholder="Category name"
+          />
+        </div>
+
+        {categories.length > 0 && (
+          <div className="form-group">
+            <label>Parent Category (optional)</label>
+            <CustomDropdown
+              value={parentCategory}
+              onChange={setParentCategory}
+              options={[
+                { value: '', label: 'None (Top Level)' },
+                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+              ]}
+              placeholder="None (Top Level)"
+            />
+          </div>
+        )}
+
+        <button className="btn-primary" onClick={handleSubmit}>
+          Add Category
+        </button>
+      </div>
+
+      {categories.length > 0 && (
+        <div className="existing-categories">
+          <h5>Existing Categories</h5>
+          <div className="category-list">
+            {categories.map(category => (
+              <div key={category.id} className="category-item">
+                {category.parent_id && <span className="category-indent">└ </span>}
+                {category.name}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -15,6 +182,14 @@ const Tasks = () => {
   const [showContextMenu, setShowContextMenu] = useState(null);
   const [expandedTasks, setExpandedTasks] = useState([]);
   const [editingField, setEditingField] = useState(null);
+  const [categories, setCategories] = useState([
+    { id: 'inbox', name: 'Inbox', parent_id: null },
+    { id: 'personal', name: 'Personal', parent_id: null },
+    { id: 'work', name: 'Work', parent_id: null },
+    { id: 'shopping', name: 'Shopping', parent_id: null }
+  ]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(null);
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -26,7 +201,7 @@ const Tasks = () => {
     parent_id: null
   });
   const [filter, setFilter] = useState({ category: 'inbox', status: 'all' });
-  const [sortBy, setSortBy] = useState('due_date');
+  const [sortOption, setSortOption] = useState('due_date');
 
   // Fetch tasks from backend
   useEffect(() => {
@@ -41,44 +216,157 @@ const Tasks = () => {
     fetchTasks();
   }, []);
 
-
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
-    if (result.source.droppableId !== result.destination.droppableId) {
-      const task = tasks.find(t => t.id === result.draggableId);
-      const parentTask = tasks.find(t => t.id === result.destination.droppableId);
 
-      if (task && parentTask) {
-        try {
-          await axios.put(`/api/tasks/${task.id}`, {
-            parent_id: parentTask.id
-          });
-          setTasks(tasks.map(t =>
-            t.id === task.id ? {...t, parent_id: parentTask.id} :
-            t.id === parentTask.id ? {...t, subtasks: [...t.subtasks, task]} : t
-          ));
-        } catch (error) {
-          console.error('Error moving subtask:', error);
-        }
+    const { source, destination, draggableId } = result;
+    const taskId = draggableId;
+
+    // Creating a subtask (dropping task into another task)
+    if (destination.droppableId !== source.droppableId &&
+        destination.droppableId !== 'tasks') {
+      const parentId = destination.droppableId;
+
+      try {
+        // Update the backend first
+        await axios.put(`/api/tasks/${taskId}`, {
+          parent_id: parentId
+        });
+
+        // Then update the UI
+        const updatedTasks = tasks.map(task => {
+          if (task.id === taskId) {
+            return { ...task, parent_id: parentId };
+          }
+          if (task.id === parentId && !task.subtasks.includes(taskId)) {
+            return { ...task, subtasks: [...task.subtasks, taskId] };
+          }
+          return task;
+        });
+
+        setTasks(updatedTasks);
+      } catch (error) {
+        console.error('Error updating task parent:', error);
       }
       return;
     }
-    const newTasks = Array.from(tasks);
-    const [movedTask] = newTasks.splice(result.source.index, 1);
-    newTasks.splice(result.destination.index, 0, movedTask);
-    setTasks(newTasks);
 
-    try {
-      await axios.put(`/api/tasks/${movedTask.id}`, {
-        task_order: result.destination.index,
-        parent_id: result.destination.droppableId !== 'tasks' ?
-          result.destination.droppableId : null
+    // Reordering within the same list
+    if (source.droppableId === destination.droppableId) {
+      const reorderedTasks = Array.from(tasks);
+      const filteredTasks = reorderedTasks.filter(t =>
+        (filter.category === 'all' || t.category === filter.category) &&
+        (filter.status === 'all' || (filter.status === 'completed' ? t.completed : !t.completed)) &&
+        (tagFilter === '' || t.tags.some(tag => tag.toLowerCase().includes(tagFilter.toLowerCase())))
+      );
+
+      const [movedTask] = filteredTasks.splice(source.index, 1);
+      filteredTasks.splice(destination.index, 0, movedTask);
+
+      // Update the order of tasks
+      const updatedTasks = reorderedTasks.map(task => {
+        const index = filteredTasks.findIndex(t => t.id === task.id);
+        if (index !== -1) {
+          return { ...task, task_order: index };
+        }
+        return task;
       });
-    } catch (error) {
-      setTasks(tasks); // Revert on error
+
+      setTasks(updatedTasks);
+
+      try {
+        await axios.put(`/api/tasks/${taskId}`, {
+          task_order: destination.index
+        });
+      } catch (error) {
+        console.error('Error updating task order:', error);
+      }
     }
   };
 
+  const handleTagClick = (task, tagIndex) => {
+    setShowColorPicker({ taskId: task.id, tagIndex });
+  };
+
+  const handleTagColorChange = async (color, taskId, tagIndex) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      // In a real app, you'd store color information separately
+      // For now, we'll just update the tag name as a demonstration
+      const updatedTags = [...task.tags];
+      updatedTags[tagIndex] = `${updatedTags[tagIndex].replace(/\s\[.*\]$/, '')} [${color}]`;
+
+      await axios.put(`/api/tasks/${taskId}`, {
+        tags: updatedTags
+      });
+
+      setTasks(tasks.map(t =>
+        t.id === taskId ? {...t, tags: updatedTags} : t
+      ));
+    } catch (error) {
+      console.error('Error updating tag color:', error);
+    }
+
+    setShowColorPicker(null);
+  };
+
+  const handleDateClick = async (task) => {
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = task.due_date || '';
+
+    // Position it absolutely over the current date display
+    const rect = document.getElementById(`date-${task.id}`).getBoundingClientRect();
+    dateInput.style.position = 'absolute';
+    dateInput.style.top = `${rect.top}px`;
+    dateInput.style.left = `${rect.left}px`;
+    dateInput.style.zIndex = 1000;
+
+    document.body.appendChild(dateInput);
+
+    const handleDateChange = async () => {
+      try {
+        const newDate = dateInput.value;
+
+        await axios.put(`/api/tasks/${task.id}`, {
+          due_date: newDate
+        });
+
+        setTasks(tasks.map(t =>
+          t.id === task.id ? {...t, due_date: newDate} : t
+        ));
+
+        document.body.removeChild(dateInput);
+      } catch (error) {
+        console.error('Error updating due date:', error);
+      }
+    };
+
+    dateInput.addEventListener('change', handleDateChange);
+    dateInput.addEventListener('blur', () => {
+      document.body.removeChild(dateInput);
+    });
+
+    dateInput.focus();
+  };
+
+  const handleAddCategory = async (name, parentId = null) => {
+    // Generate a unique ID (in a real app, this would come from the backend)
+    const id = `category_${Date.now()}`;
+
+    const newCategory = { id, name, parent_id: parentId };
+    setCategories([...categories, newCategory]);
+
+    // In a real app, you'd send this to the backend
+    try {
+      // await axios.post('/api/categories', newCategory);
+      console.log('Added new category:', newCategory);
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
+  };
 
   const handleTagChange = (taskId, newTags) => {
     setTasks(tasks.map(task =>
@@ -88,7 +376,6 @@ const Tasks = () => {
 
   const handleSubmitTask = async () => {
     try {
-
       const response = editingTask
         ? await axios.put(`/api/tasks/${editingTask.id}`, newTask)
         : await axios.post('/api/tasks', newTask);
@@ -162,63 +449,97 @@ const Tasks = () => {
     return '';
   };
 
+  const getProgress = (subtaskIds) => {
+    const subtasks = subtaskIds.map(id => tasks.find(t => t.id === id));
+    const completed = subtasks.filter(st => st?.completed).length;
+    return (completed / subtasks.length) * 100 || 0;
+  };
 
+  // Filter and sort tasks - updated to move completed to the bottom of each section
   const filteredTasks = tasks
-  .filter(task =>
-    (filter.category === 'all' || task.category === filter.category) &&
-    (filter.status === 'all' || (filter.status === 'completed' ? task.completed : !task.completed)) &&
-    (tagFilter === '' || task.tags.some(tag => tag.toLowerCase().includes(tagFilter.toLowerCase())))
-  )
+    .filter(task =>
+      (filter.category === 'all' || task.category === filter.category) &&
+      (filter.status === 'all' || (filter.status === 'completed' ? task.completed : !task.completed)) &&
+      (tagFilter === '' || task.tags.some(tag => tag.toLowerCase().includes(tagFilter.toLowerCase())))
+    )
     .sort((a, b) => {
-      if (a.task_order !== b.task_order) return a.task_order - b.task_order;
-      if (a.due_date !== b.due_date) return new Date(a.due_date) - new Date(b.due_date);
-      return a.priority - b.priority;
+      // First sort by completion status
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+
+      // Then sort by the selected option
+      switch (sortOption) {
+        case 'due_date':
+          return (a.due_date || '9999-99-99').localeCompare(b.due_date || '9999-99-99');
+        case 'priority':
+          return a.priority - b.priority;
+        case 'title':
+          return a.title.localeCompare(b.title);
+        default:
+          return a.task_order - b.task_order;
+      }
     });
 
   return (
     <div className="tasks-container">
       <div className="tasks-header">
         <div className="header-left">
-          <select
+          <div className="category-selector">
+            <CustomDropdown
               value={filter.category}
-              onChange={(e) => setFilter({...filter, category: e.target.value})}
-              className="category-select"
-          >
-            {['inbox', 'personal', 'work', 'shopping'].map(category => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-            ))}
-          </select>
+              onChange={(value) => setFilter({...filter, category: value})}
+              options={[
+                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+              ]}
+              className="category-dropdown"
+            />
+            <button
+              className="category-manage-btn"
+              onClick={() => setShowCategoryManager(true)}
+            >
+              <FontAwesomeIcon icon={faFolder} />
+            </button>
+          </div>
+
           <div className="filter-group">
-            <select
-                onChange={(e) => setFilter({...filter, status: e.target.value})}
-                className="status-filter"
-            >
-              <option value="all">All Tasks</option>
-              <option value="completed">Completed</option>
-              <option value="active">Active</option>
-            </select>
-            <select
-                onChange={(e) => setSortBy(e.target.value)}
-                className="sort-select"
-            >
-              <option value="due_date">Sort by Due Date</option>
-              <option value="priority">Sort by Priority</option>
-              <option value="order">Sort by Order</option>
-            </select>
-            <input
+            <CustomDropdown
+              value={filter.status}
+              onChange={(value) => setFilter({...filter, status: value})}
+              options={[
+                { value: 'all', label: 'All Tasks' },
+                { value: 'active', label: 'Active Tasks' },
+                { value: 'completed', label: 'Completed Tasks' }
+              ]}
+              className="status-dropdown"
+            />
+
+            <div className="sort-container">
+              <span className="sort-label">Sort by:</span>
+              <CustomDropdown
+                value={sortOption}
+                onChange={setSortOption}
+                options={[
+                  { value: 'due_date', label: 'Due Date' },
+                  { value: 'priority', label: 'Priority' },
+                  { value: 'title', label: 'Name' }
+                ]}
+                className="sort-dropdown"
+              />
+            </div>
+
+            <div className="tag-filter">
+              <input
                 type="text"
                 placeholder="Filter by tags..."
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
                 className="tag-filter-input"
-            />
+              />
+            </div>
           </div>
         </div>
         <button
-            onClick={() => setShowModal(true)}
-            className="new-task-button"
+          onClick={() => setShowModal(true)}
+          className="new-task-button"
         >
           <FontAwesomeIcon icon={faPlus}/> New Task
         </button>
@@ -227,32 +548,32 @@ const Tasks = () => {
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="tasks">
           {(provided) => (
-              <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="task-list"
-              >
-                {filteredTasks.map((task, index) => (
-                    <Draggable key={task.id} draggableId={String(task.id)} index={index}>
-                      {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="task-list"
+            >
+              {filteredTasks.map((task, index) => (
+                <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className={`task-item ${task.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''}`}
+                    >
+                      {task.subtasks.length > 0 && (
+                        <div className="progress-bar">
                           <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`task-item ${task.completed ? 'completed' : ''}`}
-                          >
-                            {task.subtasks.length > 0 && (
-                              <div className="progress-bar">
-                                <div
-                                  className="progress-fill"
-                                  style={{ width: `${getProgress(task.subtasks)}%` }}
-                                />
-                              </div>
-                            )}
-                            <div className="task-main">
-                              <button
-                                  className="complete-btn"
-                                  onClick={() => toggleComplete(task.id)}
+                            className="progress-fill"
+                            style={{ width: `${getProgress(task.subtasks)}%` }}
+                          />
+                        </div>
+                      )}
+                      <div className="task-main">
+                        <button
+                          className="complete-btn"
+                          onClick={() => toggleComplete(task.id)}
                         >
                           <FontAwesomeIcon icon={faCheck} />
                         </button>
@@ -261,98 +582,155 @@ const Tasks = () => {
                           <p>{task.description}</p>
                           <div className="task-meta">
                             {task.due_date && (
-                                <span
-                                    className="due-date"
-                                    data-deadline={getDeadlineType(task.due_date)}
-                                >
-                                  <FontAwesomeIcon icon={faCalendarDays}/>
-                                                                  {new Date(task.due_date).toLocaleDateString()}
-                                </span>
-
-                            )}
-                            {task.tags.length > 0 && (
-                              <span className="tags" data-tag={task.tags[0].toLowerCase()}>
-                                <FontAwesomeIcon icon={faTags} />
-                                {task.tags.join(', ')}
+                              <span
+                                id={`date-${task.id}`}
+                                className="due-date"
+                                data-deadline={getDeadlineType(task.due_date)}
+                                onClick={() => handleDateClick(task)}
+                              >
+                                <FontAwesomeIcon icon={faCalendarDays}/>
+                                {new Date(task.due_date).toLocaleDateString()}
                               </span>
                             )}
+
+                            <div className="tags-container">
+                              {task.tags.map((tag, idx) => (
+                                <Tag
+                                  key={idx}
+                                  tag={tag}
+                                  onClick={() => handleTagClick(task, idx)}
+                                />
+                              ))}
+                            </div>
+
                             <span className="category">{task.category}</span>
                           </div>
                         </div>
 
-                              <div className="task-actions">
-                                {task.subtasks.length > 0 && (
-      <button
-        className={`subtask-indicator ${
-          !expandedTasks.includes(task.id) ? 'collapsed' : ''
-        }`}
-        onClick={() => setExpandedTasks(prev =>
-          prev.includes(task.id)
-            ? prev.filter(id => id !== task.id)
-            : [...prev, task.id]
-        )}
-      >
-        ▼
-      </button>
-    )}
-                                <button
-                                    className="more-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShowContextMenu(showContextMenu === task.id ? null : task.id);
-                                    }}
-                                >
-                                  <FontAwesomeIcon icon={faEllipsisVertical}/>
-                                </button>
-                                {showContextMenu === task.id && (
-                                    <div className="context-menu">
-                                      <button
-                                          onClick={() => {
-                                            openEditModal(task);
-                                            setShowContextMenu(null);
-                                          }}
-                                      >
-                                        <FontAwesomeIcon icon={faEdit}/> Edit
-                                      </button>
-                                      <button
-                                          onClick={() => {
-                                            deleteTask(task.id);
-                                            setShowContextMenu(null);
-                                          }}
-                                      >
-                                        <FontAwesomeIcon icon={faTrash}/> Delete
-                                      </button>
-                                    </div>
-                                )}
-                              </div>
+                        <div className="task-actions">
+                          {task.subtasks.length > 0 && (
+                            <button
+                              className={`subtask-indicator ${
+                                !expandedTasks.includes(task.id) ? 'collapsed' : ''
+                              }`}
+                              onClick={() => setExpandedTasks(prev =>
+                                prev.includes(task.id)
+                                  ? prev.filter(id => id !== task.id)
+                                  : [...prev, task.id]
+                              )}
+                            >
+                              ▼
+                            </button>
+                          )}
+                          <button
+                            className="more-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowContextMenu(showContextMenu === task.id ? null : task.id);
+                            }}
+                          >
+                            <FontAwesomeIcon icon={faEllipsisVertical}/>
+                          </button>
+                          {showContextMenu === task.id && (
+                            <div className="context-menu">
+                              <button
+                                onClick={() => {
+                                  openEditModal(task);
+                                  setShowContextMenu(null);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faEdit}/> Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  deleteTask(task.id);
+                                  setShowContextMenu(null);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faTrash}/> Delete
+                              </button>
                             </div>
-                      {task.subtasks.length > 0 && (
-                        <div className="subtasks">
-                      {task.subtasks.map(subtask => (
-                        <div key={subtask.id} className="subtask">
-                      <button
-                          className="complete-btn small"
-                          onClick={() => toggleComplete(subtask.id)}
-                      >
-                        <FontAwesomeIcon icon={faCheck}/>
-                      </button>
-                      <span>{subtask.title}</span>
-                    </div>
-                ))}
-              </div>
-          )}
-            </div>
-            )}
-        </Draggable>
-        ))}
-        {provided.placeholder}
-    </div>
-)}
-</Droppable>
-</DragDropContext>
+                          )}
+                        </div>
+                      </div>
 
-  {
-    showModal && (
+                      {/* Subtask section with droppable area */}
+                      {task.subtasks.length > 0 && expandedTasks.includes(task.id) && (
+                        <Droppable droppableId={String(task.id)}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className="subtasks"
+                            >
+                              {task.subtasks
+                                .map(subtaskId => tasks.find(t => t.id === subtaskId))
+                                .filter(Boolean)
+                                .map((subtask, idx) => (
+                                  <Draggable
+                                    key={subtask.id}
+                                    draggableId={String(subtask.id)}
+                                    index={idx}
+                                  >
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={`subtask ${subtask.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''}`}
+                                      >
+                                        <button
+                                          className="complete-btn small"
+                                          onClick={() => toggleComplete(subtask.id)}
+                                        >
+                                          <FontAwesomeIcon icon={faCheck}/>
+                                        </button>
+                                        <span className="subtask-title">{subtask.title}</span>
+
+                                        {/* Show subtask meta if it has due date or tags */}
+                                        {(subtask.due_date || subtask.tags.length > 0) && (
+                                          <div className="subtask-meta">
+                                            {subtask.due_date && (
+                                              <span
+                                                className="due-date small"
+                                                onClick={() => handleDateClick(subtask)}
+                                              >
+                                                {new Date(subtask.due_date).toLocaleDateString()}
+                                              </span>
+                                            )}
+
+                                            {subtask.tags.map((tag, idx) => (
+                                              <span
+                                                key={idx}
+                                                className="tag small"
+                                                onClick={() => handleTagClick(subtask, idx)}
+                                              >
+                                                {tag}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      )}
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      {/* Task Modal */}
+      {showModal && (
         <div className="modal">
           <div className="modal-content">
             <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
@@ -399,54 +777,96 @@ const Tasks = () => {
             <div className="form-row">
               <div className="form-group">
                 <label>Priority</label>
-                <select
+                <CustomDropdown
                   value={newTask.priority}
-                  onChange={(e) => setNewTask({ ...newTask, priority: parseInt(e.target.value) })}
-                >
-                  <option value={1}>High Priority</option>
-                  <option value={2}>Medium Priority</option>
-                  <option value={3}>Low Priority</option>
-                </select>
+                  onChange={(value) => setNewTask({ ...newTask, priority: parseInt(value) })}
+                  options={[
+                    { value: 1, label: 'High Priority' },
+                    { value: 2, label: 'Medium Priority' },
+                    { value: 3, label: 'Low Priority' }
+                  ]}
+                />
               </div>
 
               <div className="form-group">
                 <label>Category</label>
-                <select
+                <CustomDropdown
                   value={newTask.category}
-                  onChange={(e) => setNewTask({ ...newTask, category: e.target.value })}
-                >
-                  {['inbox', 'personal', 'work', 'shopping'].map(category => (
-                    <option key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setNewTask({ ...newTask, category: value })}
+                  options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                />
               </div>
             </div>
 
             <div className="form-group">
               <label>Tags</label>
-              <input
-                type="text"
-                placeholder="comma, separated, tags"
-                value={newTask.tags.join(', ')}
-                onChange={(e) => setNewTask({ ...newTask, tags: e.target.value.split(', ') })}
-              />
+              <div className="tags-input-container">
+                {newTask.tags.map((tag, index) => (
+                  <div key={index} className="tag-input-item">
+                    <span>{tag}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTags = [...newTask.tags];
+                        newTags.splice(index, 1);
+                        setNewTask({ ...newTask, tags: newTags });
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <input
+                  type="text"
+                  placeholder="Add tags..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.target.value) {
+                      if (!newTask.tags.includes(e.target.value)) {
+                        setNewTask({
+                          ...newTask,
+                          tags: [...newTask.tags, e.target.value]
+                        });
+                      }
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             <div className="modal-actions">
               <button className="btn-primary" onClick={handleSubmitTask}>
-                {editingTask ? 'Save Changes' : 'Create Task'}
-              </button>
-              <button className="btn-secondary" onClick={closeModal}>
-                Cancel
-              </button>
+                {editingTask ? 'Save Changes' : 'Create Task'} </button>
+              <button className="btn-secondary" onClick={closeModal}> Cancel </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Category Manager Modal */}
+      {showCategoryManager && (
+        <div className="modal">
+          <CategoryManager
+            categories={categories}
+            onAddCategory={handleAddCategory}
+            onClose={() => setShowCategoryManager(false)}
+          />
+        </div>
+      )}
+
+      {/* Color Picker for Tags */}
+      {showColorPicker && (
+        <div className="color-picker-container">
+          <ColorPicker
+            onSelect={(color) => handleTagColorChange(
+              color,
+              showColorPicker.taskId,
+              showColorPicker.tagIndex
+            )}
+            onClose={() => setShowColorPicker(null)}
+          />
         </div>
       )}
     </div>
   );
 };
-
-export default Tasks;
