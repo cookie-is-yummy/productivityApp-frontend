@@ -506,7 +506,24 @@ const Tasks = () => {
       }
       return;
     }
+    if (destination.droppableId.startsWith('subcategory-')) {
+      const categoryId = destination.droppableId.replace('subcategory-', '');
 
+      try {
+        // Update the backend to change the task's category
+        await axios.put(`/api/tasks/${taskId}`, {
+          category: categoryId
+        });
+
+        // Update the UI
+        setTasks(tasks.map(task =>
+          task.id === taskId ? {...task, category: categoryId} : task
+        ));
+      } catch (error) {
+        console.error('Error updating task category:', error);
+      }
+      return;
+    }
     // Reordering within the same list
     if (source.droppableId === destination.droppableId) {
       const reorderedTasks = Array.from(tasks);
@@ -567,30 +584,33 @@ const Tasks = () => {
   };
 
   const handleTagColorChange = async (color, taskId, tagIndex) => {
-    try {
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+  try {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
 
-      // Update the tag with color information
-      const updatedTags = [...task.tags];
+    // Ensure tags is an array
+    const currentTags = Array.isArray(task.tags) ? [...task.tags] : [];
 
-      // Extract the tag name without any existing color info
-      const tagName = updatedTags[tagIndex].replace(/\s*\[.*?\]$/, '').trim();
-      updatedTags[tagIndex] = `${tagName} [${color}]`;
+    // Extract the tag name without any existing color info
+    const tagName = currentTags[tagIndex] ? currentTags[tagIndex].replace(/\s*\[.*?\]$/, '').trim() : '';
+
+    if (tagName) {
+      currentTags[tagIndex] = `${tagName} [${color}]`;
 
       await axios.put(`/api/tasks/${taskId}`, {
-        tags: updatedTags
+        tags: currentTags
       });
 
       setTasks(tasks.map(t =>
-        t.id === taskId ? {...t, tags: updatedTags} : t
+        t.id === taskId ? {...t, tags: currentTags} : t
       ));
-    } catch (error) {
-      console.error('Error updating tag color:', error);
     }
+  } catch (error) {
+    console.error('Error updating tag color:', error);
+  }
 
-    setShowColorPicker(null);
-  };
+  setShowColorPicker(null);
+};
 
   const handleDateClick = (task) => {
     // Show date picker modal instead of inline editing
@@ -654,14 +674,17 @@ const Tasks = () => {
 
   const handleTagChange = async (taskId, newTags) => {
     try {
-      // First update the backend
+      // First check if newTags is an array
+      const tagsToSend = Array.isArray(newTags) ? newTags : [];
+
+      // Update the backend
       await axios.put(`/api/tasks/${taskId}`, {
-        tags: newTags
+        tags: tagsToSend
       });
 
       // Then update the UI
       setTasks(tasks.map(task =>
-        task.id === taskId ? {...task, tags: newTags} : task
+        task.id === taskId ? {...task, tags: tagsToSend} : task
       ));
     } catch (error) {
       console.error('Error updating tags:', error);
@@ -1058,37 +1081,42 @@ const Tasks = () => {
                       ))}
 
                     {/* Then show tasks grouped by active subcategories */}
+                    // Modify the part in the render where subcategory tasks are displayed
                     {activeSubcategoryIds.map(subcatId => {
                       const subcategory = categories.find(cat => cat.id === subcatId);
                       const subcategoryTasks = topLevelTasks.filter(task => task.category === subcatId);
 
-                      if (subcategoryTasks.length === 0) return null;
-
                       return (
                         <div key={subcatId} className="subcategory-section">
                           <h3 className="subcategory-heading">{subcategory.name}</h3>
-                          {subcategoryTasks.map((task, index) => (
-                            <TaskItem
-                              key={task.id}
-                              task={task}
-                              index={index}
-                              tasks={tasks}
-                              expandedTasks={expandedTasks}
-                              setExpandedTasks={setExpandedTasks}
-                              toggleComplete={toggleComplete}
-                              handleDateClick={handleDateClick}
-                              handleTagClick={handleTagClick}
-                              handleCategoryClick={handleCategoryClick}
-                              showContextMenu={showContextMenu}
-                              setShowContextMenu={setShowContextMenu}
-                              contextMenuRef={contextMenuRef}
-                              openEditModal={openEditModal}
-                              deleteTask={deleteTask}
-                              getProgress={getProgress}
-                              getDeadlineType={getDeadlineType}
-                              droppingOnTask={droppingOnTask}
-                            />
-                          ))}
+                          {subcategoryTasks.length > 0 ? (
+                            subcategoryTasks.map((task, index) => (
+                              <TaskItem
+                                key={task.id}
+                                task={task}
+                                index={index}
+                                tasks={tasks}
+                                expandedTasks={expandedTasks}
+                                setExpandedTasks={setExpandedTasks}
+                                toggleComplete={toggleComplete}
+                                handleDateClick={handleDateClick}
+                                handleTagClick={handleTagClick}
+                                handleCategoryClick={handleCategoryClick}
+                                showContextMenu={showContextMenu}
+                                setShowContextMenu={setShowContextMenu}
+                                contextMenuRef={contextMenuRef}
+                                openEditModal={openEditModal}
+                                deleteTask={deleteTask}
+                                getProgress={getProgress}
+                                getDeadlineType={getDeadlineType}
+                                droppingOnTask={droppingOnTask}
+                              />
+                            ))
+                          ) : (
+                            <div className="no-tasks-placeholder">
+                              <p>No tasks in this subcategory</p>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
