@@ -728,3 +728,127 @@ input:focus, textarea:focus {
     padding: 1.5rem;
   }
 }
+
+/* Add these styles to your existing Tasks.css file */
+
+/* Subcategory styling in dropdown */
+.dropdown-item.subcategory {
+  padding-left: 1.75rem;
+  color: #666;
+  position: relative;
+  cursor: default;
+}
+
+.subcategory-indent {
+  position: absolute;
+  left: 0.75rem;
+  color: #999;
+}
+
+/* Date Picker Modal */
+.date-picker-modal {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+
+.date-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.date-picker-header h4 {
+  margin: 0;
+}
+
+.date-picker-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.date-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.date-picker-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* Date input styling for Task modal */
+.date-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.date-input-field {
+  flex: 1;
+  border: none;
+  padding: 0.75rem;
+  background: white;
+  cursor: pointer;
+}
+
+.date-input-button {
+  background: #f8f8f8;
+  border: none;
+  border-left: 1px solid #ddd;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.date-input-button:hover {
+  background: #f0f0f0;
+}
+
+/* Fix for context menu z-index issue */
+.context-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 0.5rem;
+  min-width: 160px;
+  z-index: 1001;
+}
+
+/* Make category clickable */
+.category {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category:hover {
+  background: #efefef;
+  text-decoration: underline;
+}
+
+/* Droppable task indication */
+.task-item {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Add visual indication when task is being dragged over */
+.subtasks.dragging-over {
+  background-color: #f0f8ff;
+  border-radius: 8px;
+  padding: 0.5rem;
+}

@@ -40,17 +40,63 @@ const CustomDropdown = ({ value, onChange, options, placeholder, className }) =>
           {options.map(option => (
             <div
               key={option.value}
-              className={`dropdown-item ${option.value === value ? 'selected' : ''}`}
+              className={`dropdown-item ${option.value === value ? 'selected' : ''} ${option.isSubcategory ? 'subcategory' : ''}`}
               onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
+                if (!option.isSubcategory) { // Only allow selection of non-subcategories
+                  onChange(option.value);
+                  setIsOpen(false);
+                }
               }}
             >
+              {option.isSubcategory && <span className="subcategory-indent">└ </span>}
               {option.label}
             </div>
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+// Date Picker Modal
+const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
+  const [date, setDate] = useState(selectedDate || '');
+
+  return (
+    <div className="date-picker-modal">
+      <div className="date-picker-header">
+        <h4>Select Due Date</h4>
+        <button className="close-btn" onClick={onClose}>×</button>
+      </div>
+      <div className="date-picker-content">
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="date-input"
+        />
+        <div className="date-picker-actions">
+          <button
+            className="btn-primary"
+            onClick={() => {
+              onSelect(date);
+              onClose();
+            }}
+          >
+            Apply Date
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => {
+              setDate('');
+              onSelect('');
+              onClose();
+            }}
+          >
+            Clear Date
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -118,6 +164,9 @@ const CategoryManager = ({ categories, onAddCategory, onClose }) => {
     setNewCategory('');
   };
 
+  // Filter out subcategories for parent dropdown
+  const topLevelCategories = categories.filter(cat => !cat.parent_id);
+
   return (
     <div className="category-manager">
       <div className="category-manager-header">
@@ -136,7 +185,7 @@ const CategoryManager = ({ categories, onAddCategory, onClose }) => {
           />
         </div>
 
-        {categories.length > 0 && (
+        {topLevelCategories.length > 0 && (
           <div className="form-group">
             <label>Parent Category (optional)</label>
             <CustomDropdown
@@ -144,7 +193,7 @@ const CategoryManager = ({ categories, onAddCategory, onClose }) => {
               onChange={setParentCategory}
               options={[
                 { value: '', label: 'None (Top Level)' },
-                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                ...topLevelCategories.map(cat => ({ value: cat.id, label: cat.name }))
               ]}
               placeholder="None (Top Level)"
             />
@@ -182,10 +231,14 @@ const Tasks = () => {
   const [showContextMenu, setShowContextMenu] = useState(null);
   const [expandedTasks, setExpandedTasks] = useState([]);
   const [editingField, setEditingField] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(null);
   const [categories, setCategories] = useState([
     { id: 'inbox', name: 'Inbox', parent_id: null },
     { id: 'personal', name: 'Personal', parent_id: null },
     { id: 'work', name: 'Work', parent_id: null },
+    { id: 'work-projects', name: 'Projects', parent_id: 'work' },
+    { id: 'work-meetings', name: 'Meetings', parent_id: 'work' },
+    { id: 'personal-home', name: 'Home', parent_id: 'personal' },
     { id: 'shopping', name: 'Shopping', parent_id: null }
   ]);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
@@ -203,6 +256,9 @@ const Tasks = () => {
   const [filter, setFilter] = useState({ category: 'inbox', status: 'all' });
   const [sortOption, setSortOption] = useState('due_date');
 
+  // Ref for context menu positioning
+  const contextMenuRef = useRef(null);
+
   // Fetch tasks from backend
   useEffect(() => {
     const fetchTasks = async () => {
@@ -216,24 +272,52 @@ const Tasks = () => {
     fetchTasks();
   }, []);
 
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showContextMenu && contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
+        setShowContextMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showContextMenu]);
+
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
     const { source, destination, draggableId } = result;
     const taskId = draggableId;
 
-    // Creating a subtask (dropping task into another task)
-    if (destination.droppableId !== source.droppableId &&
-        destination.droppableId !== 'tasks') {
-      const parentId = destination.droppableId;
+    // Creating a subtask by dropping onto another task
+    if (destination.droppableId.startsWith('task-')) {
+      const parentId = destination.droppableId.replace('task-', '');
+
+      // Don't allow making a task a subtask of itself or its descendants
+      if (taskId === parentId) return;
+
+      // Check if target would become a descendant of itself
+      const wouldCreateCycle = (parentTaskId, childTaskId) => {
+        const childTask = tasks.find(t => t.id === childTaskId);
+        if (!childTask) return false;
+
+        if (childTask.subtasks.includes(parentTaskId)) return true;
+
+        return childTask.subtasks.some(subId =>
+          wouldCreateCycle(parentTaskId, subId)
+        );
+      };
+
+      if (wouldCreateCycle(taskId, parentId)) return;
 
       try {
-        // Update the backend first
+        // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
           parent_id: parentId
         });
 
-        // Then update the UI
+        // Update the UI
         const updatedTasks = tasks.map(task => {
           if (task.id === taskId) {
             return { ...task, parent_id: parentId };
@@ -293,10 +377,10 @@ const Tasks = () => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
-      // In a real app, you'd store color information separately
-      // For now, we'll just update the tag name as a demonstration
+      // Update the tag with color information
       const updatedTags = [...task.tags];
-      updatedTags[tagIndex] = `${updatedTags[tagIndex].replace(/\s\[.*\]$/, '')} [${color}]`;
+      const tagName = updatedTags[tagIndex].replace(/\s\[.*\]$/, '');
+      updatedTags[tagIndex] = `${tagName} [${color}]`;
 
       await axios.put(`/api/tasks/${taskId}`, {
         tags: updatedTags
@@ -312,44 +396,34 @@ const Tasks = () => {
     setShowColorPicker(null);
   };
 
-  const handleDateClick = async (task) => {
-    const dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.value = task.due_date || '';
+  const handleDateClick = (task) => {
+    // Show date picker modal instead of inline editing
+    setShowDatePicker(task.id);
+  };
 
-    // Position it absolutely over the current date display
-    const rect = document.getElementById(`date-${task.id}`).getBoundingClientRect();
-    dateInput.style.position = 'absolute';
-    dateInput.style.top = `${rect.top}px`;
-    dateInput.style.left = `${rect.left}px`;
-    dateInput.style.zIndex = 1000;
+  const handleDateSelection = async (taskId, newDate) => {
+    try {
+      await axios.put(`/api/tasks/${taskId}`, {
+        due_date: newDate
+      });
 
-    document.body.appendChild(dateInput);
+      setTasks(tasks.map(t =>
+        t.id === taskId ? {...t, due_date: newDate} : t
+      ));
+    } catch (error) {
+      console.error('Error updating due date:', error);
+    }
 
-    const handleDateChange = async () => {
-      try {
-        const newDate = dateInput.value;
+    // Close the date picker
+    setShowDatePicker(null);
+  };
 
-        await axios.put(`/api/tasks/${task.id}`, {
-          due_date: newDate
-        });
-
-        setTasks(tasks.map(t =>
-          t.id === task.id ? {...t, due_date: newDate} : t
-        ));
-
-        document.body.removeChild(dateInput);
-      } catch (error) {
-        console.error('Error updating due date:', error);
-      }
-    };
-
-    dateInput.addEventListener('change', handleDateChange);
-    dateInput.addEventListener('blur', () => {
-      document.body.removeChild(dateInput);
-    });
-
-    dateInput.focus();
+  const handleCategoryClick = (categoryName) => {
+    // Find the category by name
+    const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+    if (category) {
+      setFilter({...filter, category: category.id});
+    }
   };
 
   const handleAddCategory = async (name, parentId = null) => {
@@ -368,10 +442,20 @@ const Tasks = () => {
     }
   };
 
-  const handleTagChange = (taskId, newTags) => {
-    setTasks(tasks.map(task =>
-      task.id === taskId ? {...task, tags: newTags} : task
-    ));
+  const handleTagChange = async (taskId, newTags) => {
+    try {
+      // First update the backend
+      await axios.put(`/api/tasks/${taskId}`, {
+        tags: newTags
+      });
+
+      // Then update the UI
+      setTasks(tasks.map(task =>
+        task.id === taskId ? {...task, tags: newTags} : task
+      ));
+    } catch (error) {
+      console.error('Error updating tags:', error);
+    }
   };
 
   const handleSubmitTask = async () => {
@@ -455,6 +539,31 @@ const Tasks = () => {
     return (completed / subtasks.length) * 100 || 0;
   };
 
+  // Prepare the category options with proper nesting
+  const getCategoryOptions = () => {
+    // Start with top-level categories
+    const options = categories
+      .filter(cat => !cat.parent_id)
+      .map(cat => ({ value: cat.id, label: cat.name }));
+
+    // Find and add subcategories directly after their parents
+    categories.forEach(cat => {
+      if (cat.parent_id) {
+        const parentIndex = options.findIndex(opt => opt.value === cat.parent_id);
+        if (parentIndex !== -1) {
+          // Insert after the parent
+          options.splice(parentIndex + 1, 0, {
+            value: cat.id,
+            label: cat.name,
+            isSubcategory: true // Mark as subcategory to prevent selection
+          });
+        }
+      }
+    });
+
+    return options;
+  };
+
   // Filter and sort tasks - updated to move completed to the bottom of each section
   const filteredTasks = tasks
     .filter(task =>
@@ -479,6 +588,9 @@ const Tasks = () => {
       }
     });
 
+  // Only show top-level tasks in the main list
+  const topLevelTasks = filteredTasks.filter(task => !task.parent_id);
+
   return (
     <div className="tasks-container">
       <div className="tasks-header">
@@ -487,9 +599,7 @@ const Tasks = () => {
             <CustomDropdown
               value={filter.category}
               onChange={(value) => setFilter({...filter, category: value})}
-              options={[
-                ...categories.map(cat => ({ value: cat.id, label: cat.name }))
-              ]}
+              options={getCategoryOptions()}
               className="category-dropdown"
             />
             <button
@@ -553,7 +663,7 @@ const Tasks = () => {
               ref={provided.innerRef}
               className="task-list"
             >
-              {filteredTasks.map((task, index) => (
+              {topLevelTasks.map((task, index) => (
                 <Draggable key={task.id} draggableId={String(task.id)} index={index}>
                   {(provided, snapshot) => (
                     <div
@@ -603,7 +713,12 @@ const Tasks = () => {
                               ))}
                             </div>
 
-                            <span className="category">{task.category}</span>
+                            <span
+                              className="category"
+                              onClick={() => handleCategoryClick(task.category)}
+                            >
+                              {task.category}
+                            </span>
                           </div>
                         </div>
 
@@ -632,7 +747,7 @@ const Tasks = () => {
                             <FontAwesomeIcon icon={faEllipsisVertical}/>
                           </button>
                           {showContextMenu === task.id && (
-                            <div className="context-menu">
+                            <div className="context-menu" ref={contextMenuRef}>
                               <button
                                 onClick={() => {
                                   openEditModal(task);
@@ -656,7 +771,7 @@ const Tasks = () => {
 
                       {/* Subtask section with droppable area */}
                       {task.subtasks.length > 0 && expandedTasks.includes(task.id) && (
-                        <Droppable droppableId={String(task.id)}>
+                        <Droppable droppableId={`task-${task.id}`}>
                           {(provided) => (
                             <div
                               ref={provided.innerRef}
@@ -756,11 +871,22 @@ const Tasks = () => {
             <div className="form-row">
               <div className="form-group">
                 <label>Due Date</label>
-                <input
-                  type="date"
-                  value={newTask.due_date}
-                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                />
+                <div className="date-input-container">
+                  <input
+                    type="text"
+                    value={newTask.due_date ? new Date(newTask.due_date).toLocaleDateString() : ''}
+                    placeholder="Select date..."
+                    readOnly
+                    onClick={() => setShowDatePicker('modal')}
+                    className="date-input-field"
+                  />
+                  <button
+                    className="date-input-button"
+                    onClick={() => setShowDatePicker('modal')}
+                  >
+                    <FontAwesomeIcon icon={faCalendarDays} />
+                  </button>
+                </div>
               </div>
 
               <div className="form-group">
@@ -793,7 +919,9 @@ const Tasks = () => {
                 <CustomDropdown
                   value={newTask.category}
                   onChange={(value) => setNewTask({ ...newTask, category: value })}
-                  options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                  options={categories
+                    .filter(cat => !cat.parent_id) // Only show top-level categories
+                    .map(cat => ({ value: cat.id, label: cat.name }))}
                 />
               </div>
             </div>
@@ -867,9 +995,28 @@ const Tasks = () => {
           />
         </div>
       )}
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <div className="modal">
+          <DatePickerModal
+            selectedDate={showDatePicker === 'modal'
+              ? newTask.due_date
+              : tasks.find(t => t.id === showDatePicker)?.due_date}
+            onSelect={(date) => {
+              if (showDatePicker === 'modal') {
+                setNewTask({...newTask, due_date: date});
+                setShowDatePicker(null);
+              } else {
+                handleDateSelection(showDatePicker, date);
+              }
+            }}
+            onClose={() => setShowDatePicker(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };
-
 
 export default Tasks;
