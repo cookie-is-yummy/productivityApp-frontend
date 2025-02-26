@@ -9,11 +9,14 @@ import {
 import '../styles/Tasks.css';
 import axios from '../axiosinstance';
 
-// Custom Dropdown Component
+/**
+ * Custom dropdown component with support for subcategories
+ */
 const CustomDropdown = ({ value, onChange, options, placeholder, className, onSubcategoryClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Handle clicks outside dropdown to close it
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -63,7 +66,9 @@ const CustomDropdown = ({ value, onChange, options, placeholder, className, onSu
   );
 };
 
-// Date Picker Modal
+/**
+ * Date picker modal component
+ */
 const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
   const [date, setDate] = useState(selectedDate || '');
   const [showCalendar, setShowCalendar] = useState(true);
@@ -73,10 +78,18 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
   const currentMonth = date ? new Date(date).getMonth() : today.getMonth();
   const currentYear = date ? new Date(date).getFullYear() : today.getFullYear();
 
-  // Functions to handle calendar navigation
+  // Set up calendar navigation state
   const [displayMonth, setDisplayMonth] = useState(currentMonth);
   const [displayYear, setDisplayYear] = useState(currentYear);
 
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  /**
+   * Calendar navigation functions
+   */
   const goToPreviousMonth = () => {
     if (displayMonth === 0) {
       setDisplayMonth(11);
@@ -95,7 +108,9 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
     }
   };
 
-  // Calendar rendering helper functions
+  /**
+   * Calendar helper functions
+   */
   const getDaysInMonth = (month, year) => {
     return new Date(year, month + 1, 0).getDate();
   };
@@ -104,11 +119,9 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
     return new Date(year, month, 1).getDay();
   };
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
+  /**
+   * Renders calendar days for the current month and year
+   */
   const renderCalendarDays = () => {
     const daysInMonth = getDaysInMonth(displayMonth, displayYear);
     const firstDay = getFirstDayOfMonth(displayMonth, displayYear);
@@ -217,7 +230,9 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
   );
 };
 
-// Tag Component with Click Handling
+/**
+ * Tag component with color support
+ */
 const Tag = ({ tag, onClick }) => {
   // Extract color information from tag if present (format: "tagname [color]")
   let tagName = tag;
@@ -257,7 +272,9 @@ const Tag = ({ tag, onClick }) => {
   );
 };
 
-// Color Picker Component for Tags
+/**
+ * Color picker component for tag colors
+ */
 const ColorPicker = ({ onSelect, onClose }) => {
   const colors = [
     { name: 'red', hex: '#fee2e2' },
@@ -292,10 +309,15 @@ const ColorPicker = ({ onSelect, onClose }) => {
   );
 };
 
-// Category Management Component
+/**
+ * Category management component
+ */
 const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose }) => {
   const [newCategory, setNewCategory] = useState('');
   const [parentCategory, setParentCategory] = useState('');
+
+  // Filter out subcategories for parent dropdown
+  const topLevelCategories = categories.filter(cat => !cat.parent_id);
 
   const handleSubmit = () => {
     if (!newCategory.trim()) return;
@@ -306,9 +328,6 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
     );
     setNewCategory('');
   };
-
-  // Filter out subcategories for parent dropdown
-  const topLevelCategories = categories.filter(cat => !cat.parent_id);
 
   return (
     <div className="category-manager">
@@ -374,6 +393,297 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
   );
 };
 
+/**
+ * TaskItem component renders a single task with subtasks
+ */
+const TaskItem = ({
+  task,
+  index,
+  tasks,
+  expandedTasks,
+  setExpandedTasks,
+  toggleComplete,
+  handleDateClick,
+  handleTagClick,
+  handleCategoryClick,
+  showContextMenu,
+  setShowContextMenu,
+  contextMenuRef,
+  openEditModal,
+  deleteTask,
+  getProgress,
+  getDeadlineType,
+  droppingOnTask,
+  handleTagChange,
+  isDragMode
+}) => {
+  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const progress = hasSubtasks ? getProgress(task.subtasks) : 0;
+  const isExpanded = expandedTasks.includes(task.id);
+  const [isTagEditing, setIsTagEditing] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  const handleTagEditStart = () => {
+    setIsTagEditing(true);
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      const updatedTags = [...task.tags, tagInput.trim()];
+      handleTagChange(task.id, updatedTags);
+      setTagInput('');
+      setIsTagEditing(false);
+    } else if (e.key === 'Escape') {
+      setIsTagEditing(false);
+      setTagInput('');
+    }
+  };
+
+  return (
+    <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`task-item ${task.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''} ${droppingOnTask === task.id ? 'dropping-target' : ''} ${task.parent_id ? 'subtask-item' : ''}`}
+        >
+          {hasSubtasks && (
+            <div className="progress-container">
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="progress-text">
+                {task.subtasks.filter(subtaskId =>
+                  tasks.find(t => t.id === subtaskId)?.completed
+                ).length} / {task.subtasks.length}
+              </span>
+            </div>
+          )}
+          <div className="task-main">
+            {!hasSubtasks && (
+              <button
+                className="complete-btn"
+                onClick={() => toggleComplete(task.id)}
+              >
+                <FontAwesomeIcon icon={faCheck} />
+              </button>
+            )}
+            {hasSubtasks && (
+              <button
+                className={`subtask-toggle ${isExpanded ? 'expanded' : ''}`}
+                onClick={() => setExpandedTasks(prev =>
+                  prev.includes(task.id)
+                    ? prev.filter(id => id !== task.id)
+                    : [...prev, task.id]
+                )}
+              >
+                <FontAwesomeIcon icon={faChevronDown} />
+              </button>
+            )}
+            <div className="task-info">
+              <h3>{task.title}</h3>
+              <p>{task.description}</p>
+              <div className="task-meta">
+                {task.due_date && (
+                  <span
+                    className="due-date"
+                    data-deadline={getDeadlineType(task.due_date)}
+                    onClick={() => handleDateClick(task)}
+                  >
+                    <FontAwesomeIcon icon={faCalendarDays}/>
+                    {new Date(task.due_date).toLocaleDateString()}
+                  </span>
+                )}
+
+                <div className="tags-container">
+                  {task.tags.map((tag, idx) => (
+                    <Tag
+                      key={idx}
+                      tag={tag}
+                      onClick={() => handleTagClick(task, idx)}
+                    />
+                  ))}
+                  {isTagEditing ? (
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleTagInputKeyDown}
+                      onBlur={() => setIsTagEditing(false)}
+                      className="tag-input"
+                      placeholder="Add tag..."
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      className="add-tag-btn"
+                      onClick={handleTagEditStart}
+                      title="Add tag"
+                    >
+                      <FontAwesomeIcon icon={faTags} />
+                    </button>
+                  )}
+                </div>
+
+                <span
+                  className="category"
+                  onClick={() => handleCategoryClick(task.category)}
+                >
+                  {task.category}
+                </span>
+              </div>
+            </div>
+
+            <div className="task-actions">
+              <button
+                className="more-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowContextMenu(showContextMenu === task.id ? null : task.id);
+                }}
+              >
+                <FontAwesomeIcon icon={faEllipsisVertical}/>
+              </button>
+              {showContextMenu === task.id && (
+                <div className="context-menu" ref={contextMenuRef}>
+                  <button
+                    onClick={() => {
+                      openEditModal(task);
+                      setShowContextMenu(null);
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faEdit}/> Edit
+                  </button>
+                  <button
+                    onClick={() => {
+                      deleteTask(task.id);
+                      setShowContextMenu(null);
+                    }}
+                  >
+                    <FontAwesomeIcon icon={faTrash}/> Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Subtask section with droppable area */}
+          {hasSubtasks && (
+            <Droppable droppableId={`task-${task.id}`} type="TASK">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={`subtasks ${isExpanded ? 'expanded' : ''} ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
+                  style={{ display: isExpanded ? 'flex' : 'none' }}
+                >
+                  {task.subtasks
+                    .map(subtaskId => tasks.find(t => t.id === subtaskId))
+                    .filter(Boolean)
+                    .map((subtask, idx) => (
+                      <Draggable
+                        key={subtask.id}
+                        draggableId={String(subtask.id)}
+                        index={idx}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className={`subtask ${subtask.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''}`}
+                          >
+                            <button
+                              className="complete-btn small"
+                              onClick={() => toggleComplete(subtask.id)}
+                            >
+                              <FontAwesomeIcon icon={faCheck}/>
+                            </button>
+                            <span className="subtask-title">{subtask.title}</span>
+
+                            {/* Show subtask meta if it has due date or tags */}
+                            {(subtask.due_date || subtask.tags.length > 0) && (
+                              <div className="subtask-meta">
+                                {subtask.due_date && (
+                                  <span
+                                    className="due-date small"
+                                    data-deadline={getDeadlineType(subtask.due_date)}
+                                    onClick={() => handleDateClick(subtask)}
+                                  >
+                                    {new Date(subtask.due_date).toLocaleDateString()}
+                                  </span>
+                                )}
+
+                                {subtask.tags.map((tag, idx) => (
+                                  <Tag
+                                    key={idx}
+                                    tag={tag}
+                                    onClick={() => handleTagClick(subtask, idx)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="subtask-actions">
+                              <button
+                                className="more-btn small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowContextMenu(showContextMenu === subtask.id ? null : subtask.id);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faEllipsisVertical}/>
+                              </button>
+                              {showContextMenu === subtask.id && (
+                                <div className="context-menu small" ref={contextMenuRef}>
+                                  <button
+                                    onClick={() => {
+                                      openEditModal(subtask);
+                                      setShowContextMenu(null);
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faEdit}/> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      deleteTask(subtask.id);
+                                      setShowContextMenu(null);
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faTrash}/> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                  {provided.placeholder}
+                  <div className="subtask-drop-indicator">
+                    {isDragMode ? (
+                      <span>Drop here to make this a subtask</span>
+                    ) : (
+                      <span>Drag a task here to add as a subtask</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Droppable>
+          )}
+        </div>
+      )}
+    </Draggable>
+  );
+};
+
+/**
+ * Main Tasks component
+ */
 const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [tagFilter, setTagFilter] = useState('');
@@ -410,6 +720,7 @@ const Tasks = () => {
   const [activeSubcategories, setActiveSubcategories] = useState([]);
   const [droppingOnTask, setDroppingOnTask] = useState(null);
   const [droppingInCategory, setDroppingInCategory] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Ref for context menu positioning
   const contextMenuRef = useRef(null);
@@ -445,40 +756,57 @@ const Tasks = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showContextMenu]);
 
-  // Handle drag and drop operations
+  /**
+   * Checks if making taskId a child of parentId would create a cycle in the tree structure
+   */
+  const wouldCreateCycle = (parentId, taskId) => {
+    // Don't allow making a task a subtask of itself
+    if (taskId === parentId) return true;
+
+    const childTask = tasks.find(t => t.id === parentId);
+    if (!childTask) return false;
+
+    // Check if childTask is already a subtask of taskId
+    if (childTask.parent_id === taskId) return true;
+
+    // Recursively check parents
+    if (childTask.parent_id) {
+      return wouldCreateCycle(childTask.parent_id, taskId);
+    }
+
+    return false;
+  };
+
+  /**
+   * Handles the end of a drag operation
+   */
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
-    console.log(result);
+
+    // Reset UI states
     setDroppingOnTask(null);
     setDroppingInCategory(null);
+    setIsDragging(false);
 
     // Exit if dropped outside a droppable area
     if (!destination) return;
 
     const taskId = draggableId;
 
-    // Creating a subtask by dropping onto another task
+    // Handle case: Creating a subtask by dropping onto another task
     if (destination.droppableId.startsWith('task-')) {
       const parentId = destination.droppableId.replace('task-', '');
 
-      // Don't allow making a task a subtask of itself or its descendants
-      if (taskId === parentId) return;
-
-      // Check if target would become a descendant of itself (avoid cycles)
-      const wouldCreateCycle = (parentTaskId, childTaskId) => {
-        const childTask = tasks.find(t => t.id === childTaskId);
-        if (!childTask) return false;
-
-        if (childTask.subtasks.includes(parentTaskId)) return true;
-
-        return childTask.subtasks.some(subId =>
-          wouldCreateCycle(parentTaskId, subId)
-        );
-      };
-
-      if (wouldCreateCycle(taskId, parentId)) return;
+      // Prevent cycles in task hierarchy
+      if (wouldCreateCycle(parentId, taskId)) {
+        console.log("Cannot create cycle in task hierarchy");
+        return;
+      }
 
       try {
+        // Find the task being moved
+        const sourceTask = tasks.find(t => t.id === taskId);
+
         // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
           parent_id: parentId
@@ -486,10 +814,14 @@ const Tasks = () => {
 
         // Update the UI
         const updatedTasks = tasks.map(task => {
+          // Update the dragged task with new parent
           if (task.id === taskId) {
             return { ...task, parent_id: parentId };
           }
+
+          // Add task to new parent's subtasks
           if (task.id === parentId) {
+            // Only add if not already in subtasks
             return {
               ...task,
               subtasks: task.subtasks.includes(taskId)
@@ -497,13 +829,15 @@ const Tasks = () => {
                 : [...task.subtasks, taskId]
             };
           }
-          // Remove the task from its previous parent if it had one
-          if (task.subtasks && task.subtasks.includes(taskId) && task.id !== parentId) {
+
+          // Remove task from previous parent's subtasks
+          if (sourceTask.parent_id && task.id === sourceTask.parent_id) {
             return {
               ...task,
               subtasks: task.subtasks.filter(id => id !== taskId)
             };
           }
+
           return task;
         });
 
@@ -519,7 +853,7 @@ const Tasks = () => {
       return;
     }
 
-    // Dropping into a subcategory
+    // Handle case: Dropping into a subcategory
     if (destination.droppableId.startsWith('subcategory-')) {
       const categoryId = destination.droppableId.replace('subcategory-', '');
 
@@ -539,14 +873,10 @@ const Tasks = () => {
       return;
     }
 
-    // Reordering within the same list
+    // Handle case: Reordering within the same list
     if (source.droppableId === destination.droppableId) {
       const reorderedTasks = Array.from(tasks);
-      const filteredTasks = reorderedTasks.filter(t =>
-        (filter.category === 'all' || t.category === filter.category) &&
-        (filter.status === 'all' || (filter.status === 'completed' ? t.completed : !t.completed)) &&
-        (tagFilter === '' || t.tags.some(tag => tag.toLowerCase().includes(tagFilter.toLowerCase())))
-      );
+      const filteredTasks = getFilteredTasks();
 
       const [movedTask] = filteredTasks.splice(source.index, 1);
       filteredTasks.splice(destination.index, 0, movedTask);
@@ -572,14 +902,26 @@ const Tasks = () => {
     }
   };
 
-  // Handle drag start to track potential parent task
+  /**
+   * Handles the start of a drag operation
+   */
   const handleDragStart = (start) => {
-    // Reset dropping indicators
+    // Reset dropping indicators and set dragging state
     setDroppingOnTask(null);
     setDroppingInCategory(null);
+    setIsDragging(true);
+
+    // Auto-expand all tasks when dragging to make it easier to drop into subtasks
+    const allTasksWithSubtasks = tasks
+      .filter(task => task.subtasks && task.subtasks.length > 0)
+      .map(task => task.id);
+
+    setExpandedTasks([...new Set([...expandedTasks, ...allTasksWithSubtasks])]);
   };
 
-  // Handle drag updates to show visual feedback
+  /**
+   * Handles real-time updates during drag operation to provide visual feedback
+   */
   const handleDragUpdate = (update) => {
     if (!update.destination) {
       setDroppingOnTask(null);
@@ -603,6 +945,9 @@ const Tasks = () => {
     }
   };
 
+  /**
+   * Tag handling functions
+   */
   const handleTagClick = (task, tagIndex) => {
     setShowColorPicker({ taskId: task.id, tagIndex });
   };
@@ -636,6 +981,28 @@ const Tasks = () => {
     setShowColorPicker(null);
   };
 
+  const handleTagChange = async (taskId, newTags) => {
+    try {
+      // First check if newTags is an array
+      const tagsToSend = Array.isArray(newTags) ? newTags : [];
+
+      // Update the backend
+      await axios.put(`/api/tasks/${taskId}`, {
+        tags: tagsToSend
+      });
+
+      // Then update the UI
+      setTasks(tasks.map(task =>
+        task.id === taskId ? {...task, tags: tagsToSend} : task
+      ));
+    } catch (error) {
+      console.error('Error updating tags:', error);
+    }
+  };
+
+  /**
+   * Date handling functions
+   */
   const handleDateClick = (task) => {
     // Show date picker modal instead of inline editing
     setShowDatePicker(task.id);
@@ -658,6 +1025,9 @@ const Tasks = () => {
     setShowDatePicker(null);
   };
 
+  /**
+   * Category management functions
+   */
   const handleCategoryClick = (categoryName) => {
     // Find the category by name
     const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
@@ -728,25 +1098,9 @@ const Tasks = () => {
     }
   };
 
-  const handleTagChange = async (taskId, newTags) => {
-    try {
-      // First check if newTags is an array
-      const tagsToSend = Array.isArray(newTags) ? newTags : [];
-
-      // Update the backend
-      await axios.put(`/api/tasks/${taskId}`, {
-        tags: tagsToSend
-      });
-
-      // Then update the UI
-      setTasks(tasks.map(task =>
-        task.id === taskId ? {...task, tags: tagsToSend} : task
-      ));
-    } catch (error) {
-      console.error('Error updating tags:', error);
-    }
-  };
-
+  /**
+   * Task management functions
+   */
   const handleSubmitTask = async () => {
     try {
       // Fix empty tags array issue
@@ -837,7 +1191,9 @@ const Tasks = () => {
     }
   };
 
-  // Helper function to check and update parent task completion state
+  /**
+   * Helper function to recursively update parent task completion status
+   */
   const updateParentTaskCompletion = async (task) => {
     if (!task.parent_id) return;
 
@@ -901,6 +1257,9 @@ const Tasks = () => {
     });
   };
 
+  /**
+   * Utility helper functions
+   */
   const getDeadlineType = (dueDate) => {
     if (!dueDate) return '';
 
@@ -920,7 +1279,9 @@ const Tasks = () => {
     return (completed / subtasks.length) * 100;
   };
 
-  // Prepare the category options with proper nesting
+  /**
+   * Prepares category options with proper nesting for dropdowns
+   */
   const getCategoryOptions = () => {
     // Start with top-level categories
     const options = categories
@@ -945,12 +1306,16 @@ const Tasks = () => {
     return options;
   };
 
-  // Get all subcategories for a parent category
+  /**
+   * Returns subcategories for a given parent category
+   */
   const getSubcategoriesForParent = (parentId) => {
     return categories.filter(cat => cat.parent_id === parentId);
   };
 
-  // Filter and sort tasks
+  /**
+   * Filters and sorts tasks based on current filters and sort options
+   */
   const getFilteredTasks = () => {
     let result = tasks;
 
@@ -1015,7 +1380,7 @@ const Tasks = () => {
     .map(subcat => subcat.id);
 
   return (
-    <div className="tasks-container">
+    <div className={`tasks-container ${isDragging ? 'drag-mode' : ''}`}>
       <div className="tasks-header">
         <div className="header-left">
           <div className="category-selector">
@@ -1079,6 +1444,14 @@ const Tasks = () => {
         </button>
       </div>
 
+      {isDragging && (
+        <div className="drag-instruction-overlay">
+          <div className="drag-instruction">
+            <p>Drag over a task and drop to create a subtask</p>
+          </div>
+        </div>
+      )}
+
       <DragDropContext
         onDragEnd={handleDragEnd}
         onDragStart={handleDragStart}
@@ -1100,7 +1473,7 @@ const Tasks = () => {
             </div>
           )}
 
-          <Droppable droppableId="tasks">
+          <Droppable droppableId="tasks" type="TASK">
             {(provided) => (
               <div
                 {...provided.droppableProps}
@@ -1134,6 +1507,7 @@ const Tasks = () => {
                           getDeadlineType={getDeadlineType}
                           droppingOnTask={droppingOnTask}
                           handleTagChange={handleTagChange}
+                          isDragMode={isDragging}
                         />
                       ))}
 
@@ -1145,7 +1519,7 @@ const Tasks = () => {
                       return (
                         <div key={subcatId} className="subcategory-section">
                           <h3 className="subcategory-heading">{subcategory.name}</h3>
-                          <Droppable droppableId={`subcategory-${subcatId}`}>
+                          <Droppable droppableId={`subcategory-${subcatId}`} type="TASK">
                             {(provided, snapshot) => (
                               <div
                                 ref={provided.innerRef}
@@ -1176,6 +1550,7 @@ const Tasks = () => {
                                       getDeadlineType={getDeadlineType}
                                       droppingOnTask={droppingOnTask}
                                       handleTagChange={handleTagChange}
+                                      isDragMode={isDragging}
                                     />
                                   ))
                                 ) : (
@@ -1214,6 +1589,7 @@ const Tasks = () => {
                       getDeadlineType={getDeadlineType}
                       droppingOnTask={droppingOnTask}
                       handleTagChange={handleTagChange}
+                      isDragMode={isDragging}
                     />
                   ))
                 )}
@@ -1397,287 +1773,6 @@ const Tasks = () => {
         </div>
       )}
     </div>
-  );
-};
-
-// TaskItem Component - extracted to improve readability
-const TaskItem = ({
-  task,
-  index,
-  tasks,
-  expandedTasks,
-  setExpandedTasks,
-  toggleComplete,
-  handleDateClick,
-  handleTagClick,
-  handleCategoryClick,
-  showContextMenu,
-  setShowContextMenu,
-  contextMenuRef,
-  openEditModal,
-  deleteTask,
-  getProgress,
-  getDeadlineType,
-  droppingOnTask,
-  handleTagChange
-}) => {
-  const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-  const progress = hasSubtasks ? getProgress(task.subtasks) : 0;
-  const isExpanded = expandedTasks.includes(task.id);
-  const [isTagEditing, setIsTagEditing] = useState(false);
-  const [tagInput, setTagInput] = useState('');
-
-  const handleTagEditStart = () => {
-    setIsTagEditing(true);
-  };
-
-  const handleTagInputKeyDown = (e) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      const updatedTags = [...task.tags, tagInput.trim()];
-      handleTagChange(task.id, updatedTags);
-      setTagInput('');
-      setIsTagEditing(false);
-    } else if (e.key === 'Escape') {
-      setIsTagEditing(false);
-      setTagInput('');
-    }
-  };
-
-  return (
-    <Draggable key={task.id} draggableId={String(task.id)} index={index}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className={`task-item ${task.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''} ${droppingOnTask === task.id ? 'dropping-target' : ''} ${task.parent_id ? 'subtask-item' : ''}`}
-        >
-          {hasSubtasks && (
-            <div className="progress-container">
-              <div className="progress-bar">
-                <div
-                  className="progress-fill"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <span className="progress-text">
-                {task.subtasks.filter(subtaskId =>
-                  tasks.find(t => t.id === subtaskId)?.completed
-                ).length} / {task.subtasks.length}
-              </span>
-            </div>
-          )}
-          <div className="task-main">
-            {!hasSubtasks && (
-              <button
-                className="complete-btn"
-                onClick={() => toggleComplete(task.id)}
-              >
-                <FontAwesomeIcon icon={faCheck} />
-              </button>
-            )}
-            {hasSubtasks && (
-              <button
-                className={`subtask-toggle ${isExpanded ? 'expanded' : ''}`}
-                onClick={() => setExpandedTasks(prev =>
-                  prev.includes(task.id)
-                    ? prev.filter(id => id !== task.id)
-                    : [...prev, task.id]
-                )}
-              >
-                <FontAwesomeIcon icon={faChevronDown} />
-              </button>
-            )}
-            <div className="task-info">
-              <h3>{task.title}</h3>
-              <p>{task.description}</p>
-              <div className="task-meta">
-                {task.due_date && (
-                  <span
-                    className="due-date"
-                    data-deadline={getDeadlineType(task.due_date)}
-                    onClick={() => handleDateClick(task)}
-                  >
-                    <FontAwesomeIcon icon={faCalendarDays}/>
-                    {new Date(task.due_date).toLocaleDateString()}
-                  </span>
-                )}
-
-                <div className="tags-container">
-                  {task.tags.map((tag, idx) => (
-                    <Tag
-                      key={idx}
-                      tag={tag}
-                      onClick={() => handleTagClick(task, idx)}
-                    />
-                  ))}
-                  {isTagEditing ? (
-                    <input
-                      type="text"
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={handleTagInputKeyDown}
-                      onBlur={() => setIsTagEditing(false)}
-                      className="tag-input"
-                      placeholder="Add tag..."
-                      autoFocus
-                    />
-                  ) : (
-                    <button
-                      className="add-tag-btn"
-                      onClick={handleTagEditStart}
-                      title="Add tag"
-                    >
-                      <FontAwesomeIcon icon={faTags} />
-                    </button>
-                  )}
-                </div>
-
-                <span
-                  className="category"
-                  onClick={() => handleCategoryClick(task.category)}
-                >
-                  {task.category}
-                </span>
-              </div>
-            </div>
-
-            <div className="task-actions">
-              <button
-                className="more-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowContextMenu(showContextMenu === task.id ? null : task.id);
-                }}
-              >
-                <FontAwesomeIcon icon={faEllipsisVertical}/>
-              </button>
-              {showContextMenu === task.id && (
-                <div className="context-menu" ref={contextMenuRef}>
-                  <button
-                    onClick={() => {
-                      openEditModal(task);
-                      setShowContextMenu(null);
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faEdit}/> Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      deleteTask(task.id);
-                      setShowContextMenu(null);
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faTrash}/> Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Subtask section with droppable area */}
-          {hasSubtasks && (
-            <Droppable droppableId={`task-${task.id}`}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={`subtasks ${isExpanded ? 'expanded' : ''} ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
-                  style={{ display: isExpanded ? 'flex' : 'none' }}
-                >
-                  {task.subtasks
-                    .map(subtaskId => tasks.find(t => t.id === subtaskId))
-                    .filter(Boolean)
-                    .map((subtask, idx) => (
-                      <Draggable
-                        key={subtask.id}
-                        draggableId={String(subtask.id)}
-                        index={idx}
-                      >
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`subtask ${subtask.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''}`}
-                          >
-                            <button
-                              className="complete-btn small"
-                              onClick={() => toggleComplete(subtask.id)}
-                            >
-                              <FontAwesomeIcon icon={faCheck}/>
-                            </button>
-                            <span className="subtask-title">{subtask.title}</span>
-
-                            {/* Show subtask meta if it has due date or tags */}
-                            {(subtask.due_date || subtask.tags.length > 0) && (
-                              <div className="subtask-meta">
-                                {subtask.due_date && (
-                                  <span
-                                    className="due-date small"
-                                    data-deadline={getDeadlineType(subtask.due_date)}
-                                    onClick={() => handleDateClick(subtask)}
-                                  >
-                                    {new Date(subtask.due_date).toLocaleDateString()}
-                                  </span>
-                                )}
-
-                                {subtask.tags.map((tag, idx) => (
-                                  <Tag
-                                    key={idx}
-                                    tag={tag}
-                                    onClick={() => handleTagClick(subtask, idx)}
-                                  />
-                                ))}
-                              </div>
-                            )}
-
-                            <div className="subtask-actions">
-                              <button
-                                className="more-btn small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setShowContextMenu(showContextMenu === subtask.id ? null : subtask.id);
-                                }}
-                              >
-                                <FontAwesomeIcon icon={faEllipsisVertical}/>
-                              </button>
-                              {showContextMenu === subtask.id && (
-                                <div className="context-menu small" ref={contextMenuRef}>
-                                  <button
-                                    onClick={() => {
-                                      openEditModal(subtask);
-                                      setShowContextMenu(null);
-                                    }}
-                                  >
-                                    <FontAwesomeIcon icon={faEdit}/> Edit
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      deleteTask(subtask.id);
-                                      setShowContextMenu(null);
-                                    }}
-                                  >
-                                    <FontAwesomeIcon icon={faTrash}/> Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                  {provided.placeholder}
-                  <div className="subtask-drop-indicator">
-                    <span>Drag a task here to add as a subtask</span>
-                  </div>
-                </div>
-              )}
-            </Droppable>
-          )}
-        </div>
-      )}
-    </Draggable>
   );
 };
 

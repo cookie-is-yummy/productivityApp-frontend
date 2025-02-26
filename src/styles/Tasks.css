@@ -397,7 +397,7 @@
   margin-top: 0.5rem;
 }
 
-.due-date, .category {
+.due-date, .category, .add-tag-btn {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1024,7 +1024,6 @@ input:focus, textarea:focus {
 
 .add-tag-btn{
   border: none;
-  background: none;
 }
 
 
