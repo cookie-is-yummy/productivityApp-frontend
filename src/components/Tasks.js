@@ -448,6 +448,7 @@ const Tasks = () => {
   // Handle drag and drop operations
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
+    console.log(result);
     setDroppingOnTask(null);
     setDroppingInCategory(null);
 

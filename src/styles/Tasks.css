@@ -418,6 +418,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  background: #e0f2fe;
 }
 
 .tag {
@@ -1020,6 +1021,12 @@ input:focus, textarea:focus {
   left: 0.75rem;
   color: #999;
 }
+
+.add-tag-btn{
+  border: none;
+  background: none;
+}
+
 
 /* Visual indication when dragging over a task */
 .subtasks.dragging-over {
