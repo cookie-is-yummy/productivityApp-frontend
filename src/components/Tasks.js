@@ -744,7 +744,7 @@ const TaskItem = ({
                       toggleComplete={toggleComplete}
                       handleDateClick={handleDateClick}
                       handleTagClick={handleTagClick}
-                      handleTagDelete={handleDeleteTag}
+                      handleTagDelete={handleTagDelete}
                       handleCategoryClick={handleCategoryClick}
                       showContextMenu={showContextMenu}
                       setShowContextMenu={setShowContextMenu}
@@ -840,7 +840,6 @@ const Tasks = () => {
   }, []);
 
   // Close context menu when clicking outside
-    // Close context menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showContextMenu && contextMenuRef.current && !contextMenuRef.current.contains(event.target)) {
@@ -852,7 +851,7 @@ const Tasks = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showContextMenu]);
 
-  /**
+    /**
    * Checks if making taskId a child of parentId would create a cycle in the tree structure
    */
   const wouldCreateCycle = (parentId, taskId) => {
@@ -884,10 +883,16 @@ const Tasks = () => {
     setDroppingInCategory(null);
     setIsDragging(false);
 
+    // Exit if dropped outside a droppable area and not combining
+    if (!destination && !combine) return;
+
+    const taskId = parseInt(draggableId) || draggableId;
+    const sourceTask = tasks.find(t => t.id === taskId);
+    if (!sourceTask) return; // Guard against undefined source task
+
     // Handle combining for subtasks (primary new feature)
     if (combine) {
-      const parentId = combine.draggableId;
-      const taskId = draggableId;
+      const parentId = parseInt(combine.draggableId) || combine.draggableId;
 
       // Prevent cycles in task hierarchy
       if (wouldCreateCycle(parentId, taskId)) {
@@ -901,7 +906,7 @@ const Tasks = () => {
           parent_id: parentId
         });
 
-        // Update the UI
+        // Update the UI - properly handle parent_id changes
         const updatedTasks = tasks.map(task => {
           // Update the dragged task with new parent
           if (task.id === taskId) {
@@ -912,18 +917,19 @@ const Tasks = () => {
           if (task.id === parentId) {
             return {
               ...task,
-              subtasks: task.subtasks.includes(taskId)
+              subtasks: Array.isArray(task.subtasks) && task.subtasks.includes(taskId)
                 ? task.subtasks
-                : [...task.subtasks, taskId]
+                : [...(Array.isArray(task.subtasks) ? task.subtasks : []), taskId]
             };
           }
 
           // Remove task from previous parent's subtasks if it had one
-          const sourceTask = tasks.find(t => t.id === taskId);
           if (sourceTask.parent_id && task.id === sourceTask.parent_id) {
             return {
               ...task,
-              subtasks: task.subtasks.filter(id => id !== taskId)
+              subtasks: Array.isArray(task.subtasks)
+                ? task.subtasks.filter(id => id !== taskId)
+                : []
             };
           }
 
@@ -942,14 +948,13 @@ const Tasks = () => {
       return;
     }
 
-    // Exit if dropped outside a droppable area
+    // Make sure destination exists from here on
     if (!destination) return;
-
-    const taskId = draggableId;
 
     // Handle case: Creating a subtask by dropping onto another task
     if (destination.droppableId.startsWith('task-')) {
-      const parentId = destination.droppableId.replace('task-', '');
+      const parentId = parseInt(destination.droppableId.replace('task-', '')) ||
+                       destination.droppableId.replace('task-', '');
 
       // Prevent cycles in task hierarchy
       if (wouldCreateCycle(parentId, taskId)) {
@@ -958,15 +963,12 @@ const Tasks = () => {
       }
 
       try {
-        // Find the task being moved
-        const sourceTask = tasks.find(t => t.id === taskId);
-
         // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
           parent_id: parentId
         });
 
-        // Update the UI
+        // Update the UI - properly handle parent_id changes and ensure subtasks arrays exist
         const updatedTasks = tasks.map(task => {
           // Update the dragged task with new parent
           if (task.id === taskId) {
@@ -975,20 +977,21 @@ const Tasks = () => {
 
           // Add task to new parent's subtasks
           if (task.id === parentId) {
-            // Only add if not already in subtasks
+            const currentSubtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
             return {
               ...task,
-              subtasks: task.subtasks.includes(taskId)
-                ? task.subtasks
-                : [...task.subtasks, taskId]
+              subtasks: currentSubtasks.includes(taskId)
+                ? currentSubtasks
+                : [...currentSubtasks, taskId]
             };
           }
 
-          // Remove task from previous parent's subtasks
+          // Remove task from previous parent's subtasks if it had one
           if (sourceTask.parent_id && task.id === sourceTask.parent_id) {
+            const currentSubtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
             return {
               ...task,
-              subtasks: task.subtasks.filter(id => id !== taskId)
+              subtasks: currentSubtasks.filter(id => id !== taskId)
             };
           }
 
@@ -1007,7 +1010,7 @@ const Tasks = () => {
       return;
     }
 
-    // Handle case: Dropping into a subcategory
+    // Handle case: Dropping into a subcategory - fix the subcategory handling
     if (destination.droppableId.startsWith('subcategory-')) {
       const categoryId = destination.droppableId.replace('subcategory-', '');
 
@@ -1734,13 +1737,13 @@ const Tasks = () => {
                                 {subcategoryTasks.length > 0 ? (
                                   subcategoryTasks.map((task, index) => (
                                     <TaskItem
-                                                                            key={task.id}
+                                      key={task.id}
                                       task={task}
                                       index={index}
                                       tasks={tasks}
                                       expandedTasks={expandedTasks}
                                       setExpandedTasks={setExpandedTasks}
-                                      toggleComplete={toggleComplete}
+                                                                            toggleComplete={toggleComplete}
                                       handleDateClick={handleDateClick}
                                       handleTagClick={handleTagClick}
                                       handleTagDelete={(tagIndex) => {
