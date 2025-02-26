@@ -572,7 +572,9 @@ const TaskItem = ({
           </div>
 
           {/* Subtask section with droppable area */}
-          {hasSubtasks && (
+          {/* if has no subtasks, still let them drop */}
+          {/* {hasSubtasks && (*/}
+          {(
             <Droppable droppableId={`task-${task.id}`} type="TASK">
               {(provided, snapshot) => (
                 <div
@@ -782,7 +784,7 @@ const Tasks = () => {
    */
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
-
+    console.log("Destination droppableID: ", destination.droppableId);
     // Reset UI states
     setDroppingOnTask(null);
     setDroppingInCategory(null);
