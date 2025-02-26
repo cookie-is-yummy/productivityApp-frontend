@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays,
   faEdit, faTrash, faCaretDown, faPalette, faFolder, faChevronDown, 
-  faTimes, faPen
+  faTimes, faPen, faArrowUp
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Tasks.css';
 import axios from '../axiosinstance';
@@ -357,14 +357,14 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
       setEditingCategory(null);
       return;
     }
-    
-    const updatedCategories = categories.map(cat => 
+
+    const updatedCategories = categories.map(cat =>
       cat.id === categoryId ? {...cat, name: editingName} : cat
     );
-    
+
     // In a real app, we'd call an API here
     console.log('Renamed category:', categoryId, 'to', editingName);
-    
+
     setEditingCategory(null);
     onAddCategory(editingName, categories.find(cat => cat.id === categoryId).parent_id, categoryId);
   };
@@ -374,7 +374,7 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
     return children.map(category => (
       <div key={category.id} className="category-item">
         {parentId !== 'root' && <span className="category-indent">└ </span>}
-        
+
         {editingCategory === category.id ? (
           <div className="category-edit-form">
             <input
@@ -397,7 +397,7 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
             <span className="category-name">{category.name}</span>
             {category.id !== 'inbox' && (
               <div className="category-actions">
-                <button 
+                <button
                   className="category-edit-btn"
                   onClick={() => {
                     setEditingCategory(category.id);
@@ -418,7 +418,7 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
             )}
           </>
         )}
-        
+
         {categoriesByParent[category.id] && (
           <div className="nested-categories">
             {renderCategoryTree(category.id)}
@@ -502,6 +502,7 @@ const TaskItem = ({
   droppingOnTask,
   handleTagChange,
   handleRenameTask,
+  handleRemoveSubtask,
   isDragMode // Ensure this is consistently named
 }) => {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
@@ -512,6 +513,12 @@ const TaskItem = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
 
+  // Auto-expand tasks when they receive new subtasks
+  useEffect(() => {
+    if (hasSubtasks && !isExpanded) {
+      setExpandedTasks(prev => [...prev, task.id]);
+    }
+  }, [task.subtasks, task.id, hasSubtasks, isExpanded, setExpandedTasks]);
 
   const handleTagEditStart = () => {
     setIsTagEditing(true);
@@ -545,6 +552,13 @@ const TaskItem = ({
     const updatedTags = [...task.tags];
     updatedTags.splice(tagIndex, 1);
     handleTagChange(task.id, updatedTags);
+  };
+
+  // Handle making this subtask a top-level task
+  const handleMakeTopLevel = async () => {
+    if (task.parent_id) {
+      handleRemoveSubtask(task.id, task.parent_id);
+    }
   };
 
   return (
@@ -608,18 +622,29 @@ const TaskItem = ({
                   />
                 </div>
               ) : (
-                <h3 
-                  className="task-title" 
+                <h3
+                  className="task-title"
                   onDoubleClick={handleTitleEditStart}
                 >
                   {task.title}
-                  <button 
-                    className="rename-btn" 
+                  <button
+                    className="rename-btn"
                     onClick={handleTitleEditStart}
                     title="Rename task"
                   >
                     <FontAwesomeIcon icon={faPen} />
                   </button>
+
+                  {/* Add button to make subtask a top-level task */}
+                  {task.parent_id && (
+                    <button
+                      className="make-toplevel-btn"
+                      onClick={handleMakeTopLevel}
+                      title="Make this a top-level task"
+                    >
+                      <FontAwesomeIcon icon={faArrowUp} />
+                    </button>
+                  )}
                 </h3>
               )}
               <p>{task.description}</p>
@@ -705,6 +730,16 @@ const TaskItem = ({
                   >
                     <FontAwesomeIcon icon={faEdit}/> Edit
                   </button>
+                  {task.parent_id && (
+                    <button
+                      onClick={() => {
+                        handleRemoveSubtask(task.id, task.parent_id);
+                        setShowContextMenu(null);
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faArrowUp}/> Make top-level
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       deleteTask(task.id);
@@ -719,9 +754,9 @@ const TaskItem = ({
           </div>
 
           {/* Subtask section with droppable area */}
-          <Droppable 
-            droppableId={`task-${task.id}`} 
-            type="TASK" 
+          <Droppable
+            droppableId={`task-${task.id}`}
+            type="TASK"
             isCombineEnabled={true} // Enable combining for subtasks
           >
             {(provided, snapshot) => (
@@ -729,7 +764,7 @@ const TaskItem = ({
                 ref={provided.innerRef}
                 {...provided.droppableProps}
                 className={`subtasks ${isExpanded ? 'expanded' : ''} ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
-                style={{ display: isExpanded ? 'flex' : 'none' }}
+                style={{ display: isExpanded || isDragMode ? 'flex' : 'none' }}
               >
                 {task.subtasks
                   .map(subtaskId => tasks.find(t => t.id === subtaskId))
@@ -757,6 +792,7 @@ const TaskItem = ({
                       droppingOnTask={droppingOnTask}
                       handleTagChange={handleTagChange}
                       handleRenameTask={handleRenameTask}
+                      handleRemoveSubtask={handleRemoveSubtask}
                       isDragMode={isDragMode}
                     />
                   ))}
@@ -802,7 +838,7 @@ const Tasks = () => {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(null);
   const [newTask, setNewTask] = useState({
-    title: '',
+        title: '',
     description: '',
     due_date: '',
     category: 'inbox',
@@ -852,7 +888,7 @@ const Tasks = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showContextMenu]);
 
-    /**
+  /**
    * Checks if making taskId a child of parentId would create a cycle in the tree structure
    */
   const wouldCreateCycle = (parentId, taskId) => {
@@ -951,6 +987,41 @@ const Tasks = () => {
 
     // Make sure destination exists from here on
     if (!destination) return;
+
+    // Handle case: Dropping a task onto the main task list - convert from subtask to top-level task
+    if (destination.droppableId === 'tasks' && sourceTask.parent_id) {
+      try {
+        // Update the backend to remove parent_id
+        await axios.put(`/api/tasks/${taskId}`, {
+          parent_id: null
+        });
+
+        // Update the UI
+        const updatedTasks = tasks.map(task => {
+          // Remove parent_id from the dragged task
+          if (task.id === taskId) {
+            return { ...task, parent_id: null };
+          }
+
+          // Remove task from previous parent's subtasks
+          if (task.id === sourceTask.parent_id) {
+            return {
+              ...task,
+              subtasks: Array.isArray(task.subtasks)
+                ? task.subtasks.filter(id => id !== taskId)
+                : []
+            };
+          }
+
+          return task;
+        });
+
+        setTasks(updatedTasks);
+      } catch (error) {
+        console.error('Error removing task parent:', error);
+      }
+      return;
+    }
 
     // Handle case: Creating a subtask by dropping onto another task
     if (destination.droppableId.startsWith('task-')) {
@@ -1109,6 +1180,45 @@ const Tasks = () => {
         const categoryId = droppableId.replace('subcategory-', '');
         setDroppingInCategory(categoryId);
       }
+    }
+  };
+
+  /**
+   * Function to remove a task from being a subtask
+   */
+  const handleRemoveSubtask = async (taskId, parentId) => {
+    try {
+      // Update the backend to remove parent_id
+      await axios.put(`/api/tasks/${taskId}`, {
+        parent_id: null
+      });
+
+      // Update the UI - remove parent_id and update the parent's subtasks array
+      const updatedTasks = tasks.map(task => {
+        if (task.id === taskId) {
+          return { ...task, parent_id: null };
+        }
+
+        if (task.id === parentId) {
+          return {
+            ...task,
+            subtasks: task.subtasks.filter(id => id !== taskId)
+          };
+        }
+
+        return task;
+      });
+
+      // Check if parent now has no subtasks, and update the display accordingly
+      const parentTask = updatedTasks.find(t => t.id === parentId);
+      if (parentTask && (!parentTask.subtasks || parentTask.subtasks.length === 0)) {
+        // Remove this task from expanded tasks if it's now empty
+        setExpandedTasks(prev => prev.filter(id => id !== parentId));
+      }
+
+      setTasks(updatedTasks);
+    } catch (error) {
+      console.error('Error removing subtask:', error);
     }
   };
 
@@ -1331,6 +1441,19 @@ const Tasks = () => {
     try {
       await axios.delete(`/api/tasks/${taskId}`);
 
+      // Get the task before filtering
+      const taskToDelete = tasks.find(t => t.id === taskId);
+
+      // If this is a subtask, remove it from its parent's subtasks list
+      if (taskToDelete && taskToDelete.parent_id) {
+        const parentTask = tasks.find(t => t.id === taskToDelete.parent_id);
+        if (parentTask) {
+          await axios.put(`/api/tasks/${parentTask.id}`, {
+            subtasks: parentTask.subtasks.filter(id => id !== taskId)
+          });
+        }
+      }
+
       // Delete from UI and also remove from any parent tasks
       setTasks(tasks.filter(task => {
         if (task.id === taskId) return false;
@@ -1515,10 +1638,32 @@ const Tasks = () => {
   };
 
   /**
+   * Get all tasks, including subtasks, to include in the list for the current view
+   */
+  const getAllVisibleTasks = () => {
+    let result = [...tasks];
+
+    // Include subtasks in the list if the view shows all tasks
+    result = result.filter(task => {
+      // Always show tasks that don't have a parent
+      if (!task.parent_id) return true;
+
+      // For subtasks, show if their parent is expanded OR we're dragging
+      const parent = tasks.find(t => t.id === task.parent_id);
+      if (!parent) return true; // Safety check
+
+      return expandedTasks.includes(task.parent_id) || isDragging;
+    });
+
+    return result;
+  };
+
+  /**
    * Filters and sorts tasks based on current filters and sort options
    */
   const getFilteredTasks = () => {
-    let result = tasks;
+    // Get the base set of tasks including visible subtasks
+    let result = getAllVisibleTasks();
 
     // First apply category filter - include subcategories if parent is selected
     if (filter.category !== 'all') {
@@ -1574,6 +1719,11 @@ const Tasks = () => {
   // Only show top-level tasks in the main list
   const topLevelTasks = filteredTasks.filter(task => !task.parent_id);
 
+  // Get subtasks that should be visible at the top level (drag mode)
+  const visibleSubtasks = isDragging
+    ? filteredTasks.filter(task => task.parent_id)
+    : [];
+
   // Get subcategories for current category to display as sections
   const currentSubcategories = getSubcategoriesForParent(filter.category);
   const activeSubcategoryIds = currentSubcategories
@@ -1605,7 +1755,7 @@ const Tasks = () => {
               value={filter.status}
               onChange={(value) => setFilter({...filter, status: value})}
               options={[
-                { value: 'all', label: 'All Tasks' },
+                                { value: 'all', label: 'All Tasks' },
                 { value: 'active', label: 'Active Tasks' },
                 { value: 'completed', label: 'Completed Tasks' }
               ]}
@@ -1649,6 +1799,7 @@ const Tasks = () => {
         <div className="drag-instruction-overlay">
           <div className="drag-instruction">
             <p>Drag over a task and drop to create a subtask</p>
+            <p className="drag-instruction-secondary">Drop on the main task list to remove from being a subtask</p>
           </div>
         </div>
       )}
@@ -1675,11 +1826,11 @@ const Tasks = () => {
           )}
 
           <Droppable droppableId="tasks" type="TASK" isCombineEnabled={true}>
-            {(provided) => (
+            {(provided, snapshot) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="task-list"
+                className={`task-list ${snapshot.isDraggingOver ? 'main-dragging-over' : ''}`}
               >
                 {/* Group tasks by subcategory if actively viewing subcategories */}
                 {activeSubcategoryIds.length > 0 ? (
@@ -1714,6 +1865,7 @@ const Tasks = () => {
                           droppingOnTask={droppingOnTask}
                           handleTagChange={handleTagChange}
                           handleRenameTask={handleRenameTask}
+                          handleRemoveSubtask={handleRemoveSubtask}
                           isDragMode={isDragging}
                         />
                       ))}
@@ -1744,7 +1896,7 @@ const Tasks = () => {
                                       tasks={tasks}
                                       expandedTasks={expandedTasks}
                                       setExpandedTasks={setExpandedTasks}
-                                                                            toggleComplete={toggleComplete}
+                                      toggleComplete={toggleComplete}
                                       handleDateClick={handleDateClick}
                                       handleTagClick={handleTagClick}
                                       handleTagDelete={(tagIndex) => {
@@ -1763,6 +1915,7 @@ const Tasks = () => {
                                       droppingOnTask={droppingOnTask}
                                       handleTagChange={handleTagChange}
                                       handleRenameTask={handleRenameTask}
+                                      handleRemoveSubtask={handleRemoveSubtask}
                                       isDragMode={isDragging}
                                     />
                                   ))
@@ -1781,36 +1934,46 @@ const Tasks = () => {
                   </>
                 ) : (
                   // Regular flat list of tasks when not viewing subcategories
-                  topLevelTasks.map((task, index) => (
-                    <TaskItem
-                      key={task.id}
-                      task={task}
-                      index={index}
-                      tasks={tasks}
-                      expandedTasks={expandedTasks}
-                      setExpandedTasks={setExpandedTasks}
-                      toggleComplete={toggleComplete}
-                      handleDateClick={handleDateClick}
-                      handleTagClick={handleTagClick}
-                      handleTagDelete={(tagIndex) => {
-                        const updatedTags = [...task.tags];
-                        updatedTags.splice(tagIndex, 1);
-                        handleTagChange(task.id, updatedTags);
-                      }}
-                      handleCategoryClick={handleCategoryClick}
-                      showContextMenu={showContextMenu}
-                      setShowContextMenu={setShowContextMenu}
-                      contextMenuRef={contextMenuRef}
-                      openEditModal={openEditModal}
-                      deleteTask={deleteTask}
-                      getProgress={getProgress}
-                      getDeadlineType={getDeadlineType}
-                      droppingOnTask={droppingOnTask}
-                      handleTagChange={handleTagChange}
-                      handleRenameTask={handleRenameTask}
-                      isDragMode={isDragging}
-                    />
-                  ))
+                  <>
+                    {topLevelTasks.map((task, index) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        index={index}
+                        tasks={tasks}
+                        expandedTasks={expandedTasks}
+                        setExpandedTasks={setExpandedTasks}
+                        toggleComplete={toggleComplete}
+                        handleDateClick={handleDateClick}
+                        handleTagClick={handleTagClick}
+                        handleTagDelete={(tagIndex) => {
+                          const updatedTags = [...task.tags];
+                          updatedTags.splice(tagIndex, 1);
+                          handleTagChange(task.id, updatedTags);
+                        }}
+                        handleCategoryClick={handleCategoryClick}
+                        showContextMenu={showContextMenu}
+                        setShowContextMenu={setShowContextMenu}
+                        contextMenuRef={contextMenuRef}
+                        openEditModal={openEditModal}
+                        deleteTask={deleteTask}
+                        getProgress={getProgress}
+                        getDeadlineType={getDeadlineType}
+                        droppingOnTask={droppingOnTask}
+                        handleTagChange={handleTagChange}
+                        handleRenameTask={handleRenameTask}
+                        handleRemoveSubtask={handleRemoveSubtask}
+                        isDragMode={isDragging}
+                      />
+                    ))}
+
+                    {/* Show this message when in drag mode to indicate the user can drop subtasks here */}
+                    {isDragging && (
+                      <div className="subtask-drop-indicator main-drop-area">
+                        <span>Drop here to make it a top-level task</span>
+                      </div>
+                    )}
+                  </>
                 )}
                 {provided.placeholder}
               </div>
