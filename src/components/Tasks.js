@@ -502,7 +502,7 @@ const TaskItem = ({
   droppingOnTask,
   handleTagChange,
   handleRenameTask,
-  isDragMode
+  isDragMode // Ensure this is consistently named
 }) => {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const progress = hasSubtasks ? getProgress(task.subtasks) : 0;
@@ -511,6 +511,7 @@ const TaskItem = ({
   const [tagInput, setTagInput] = useState('');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(task.title);
+
 
   const handleTagEditStart = () => {
     setIsTagEditing(true);
@@ -756,7 +757,7 @@ const TaskItem = ({
                       droppingOnTask={droppingOnTask}
                       handleTagChange={handleTagChange}
                       handleRenameTask={handleRenameTask}
-                      isDragMode={isDragging}
+                      isDragMode=false
                     />
                   ))}
                 {provided.placeholder}
