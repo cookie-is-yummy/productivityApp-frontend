@@ -757,7 +757,7 @@ const TaskItem = ({
                       droppingOnTask={droppingOnTask}
                       handleTagChange={handleTagChange}
                       handleRenameTask={handleRenameTask}
-                      isDragMode=false
+                      isDragMode={isDragMode}
                     />
                   ))}
                 {provided.placeholder}
