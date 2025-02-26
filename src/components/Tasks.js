@@ -293,7 +293,7 @@ const ColorPicker = ({ onSelect, onClose }) => {
 };
 
 // Category Management Component
-const CategoryManager = ({ categories, onAddCategory, onClose }) => {
+const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose }) => {
   const [newCategory, setNewCategory] = useState('');
   const [parentCategory, setParentCategory] = useState('');
 
@@ -355,7 +355,16 @@ const CategoryManager = ({ categories, onAddCategory, onClose }) => {
             {categories.map(category => (
               <div key={category.id} className="category-item">
                 {category.parent_id && <span className="category-indent">└ </span>}
-                {category.name}
+                <span className="category-name">{category.name}</span>
+                {category.id !== 'inbox' && (
+                  <button
+                    className="category-delete-btn"
+                    onClick={() => onDeleteCategory(category.id)}
+                    title="Delete category (tasks will be moved to Inbox)"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -400,6 +409,7 @@ const Tasks = () => {
   const [sortOption, setSortOption] = useState('due_date');
   const [activeSubcategories, setActiveSubcategories] = useState([]);
   const [droppingOnTask, setDroppingOnTask] = useState(null);
+  const [droppingInCategory, setDroppingInCategory] = useState(null);
 
   // Ref for context menu positioning
   const contextMenuRef = useRef(null);
@@ -439,6 +449,7 @@ const Tasks = () => {
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
     setDroppingOnTask(null);
+    setDroppingInCategory(null);
 
     // Exit if dropped outside a droppable area
     if (!destination) return;
@@ -506,6 +517,8 @@ const Tasks = () => {
       }
       return;
     }
+
+    // Dropping into a subcategory
     if (destination.droppableId.startsWith('subcategory-')) {
       const categoryId = destination.droppableId.replace('subcategory-', '');
 
@@ -524,6 +537,7 @@ const Tasks = () => {
       }
       return;
     }
+
     // Reordering within the same list
     if (source.droppableId === destination.droppableId) {
       const reorderedTasks = Array.from(tasks);
@@ -559,23 +573,32 @@ const Tasks = () => {
 
   // Handle drag start to track potential parent task
   const handleDragStart = (start) => {
-    // Reset dropping on task indicator
+    // Reset dropping indicators
     setDroppingOnTask(null);
+    setDroppingInCategory(null);
   };
 
-  // Handle drag updates to show visual feedback for potential parent tasks
+  // Handle drag updates to show visual feedback
   const handleDragUpdate = (update) => {
     if (!update.destination) {
       setDroppingOnTask(null);
+      setDroppingInCategory(null);
       return;
     }
 
     const droppableId = update.destination.droppableId;
+
+    // Reset all indicators first
+    setDroppingOnTask(null);
+    setDroppingInCategory(null);
+
+    // Set appropriate indicator based on drop target
     if (droppableId.startsWith('task-')) {
       const taskId = droppableId.replace('task-', '');
       setDroppingOnTask(taskId);
-    } else {
-      setDroppingOnTask(null);
+    } else if (droppableId.startsWith('subcategory-')) {
+      const categoryId = droppableId.replace('subcategory-', '');
+      setDroppingInCategory(categoryId);
     }
   };
 
@@ -584,33 +607,33 @@ const Tasks = () => {
   };
 
   const handleTagColorChange = async (color, taskId, tagIndex) => {
-  try {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
 
-    // Ensure tags is an array
-    const currentTags = Array.isArray(task.tags) ? [...task.tags] : [];
+      // Ensure tags is an array
+      const currentTags = Array.isArray(task.tags) ? [...task.tags] : [];
 
-    // Extract the tag name without any existing color info
-    const tagName = currentTags[tagIndex] ? currentTags[tagIndex].replace(/\s*\[.*?\]$/, '').trim() : '';
+      // Extract the tag name without any existing color info
+      const tagName = currentTags[tagIndex] ? currentTags[tagIndex].replace(/\s*\[.*?\]$/, '').trim() : '';
 
-    if (tagName) {
-      currentTags[tagIndex] = `${tagName} [${color}]`;
+      if (tagName) {
+        currentTags[tagIndex] = `${tagName} [${color}]`;
 
-      await axios.put(`/api/tasks/${taskId}`, {
-        tags: currentTags
-      });
+        await axios.put(`/api/tasks/${taskId}`, {
+          tags: currentTags
+        });
 
-      setTasks(tasks.map(t =>
-        t.id === taskId ? {...t, tags: currentTags} : t
-      ));
+        setTasks(tasks.map(t =>
+          t.id === taskId ? {...t, tags: currentTags} : t
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating tag color:', error);
     }
-  } catch (error) {
-    console.error('Error updating tag color:', error);
-  }
 
-  setShowColorPicker(null);
-};
+    setShowColorPicker(null);
+  };
 
   const handleDateClick = (task) => {
     // Show date picker modal instead of inline editing
@@ -669,6 +692,38 @@ const Tasks = () => {
       console.log('Added new category:', newCategory);
     } catch (error) {
       console.error('Error adding category:', error);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    // Cannot delete inbox
+    if (categoryId === 'inbox') return;
+
+    try {
+      // In a real app, you'd call an API endpoint here
+      // Move all tasks to inbox
+      const updatedTasks = tasks.map(task =>
+        task.category === categoryId ? {...task, category: 'inbox'} : task
+      );
+
+      // Remove the category
+      const updatedCategories = categories.filter(cat => cat.id !== categoryId);
+
+      // Also remove any subcategories of this category
+      const filteredCategories = updatedCategories.filter(cat => cat.parent_id !== categoryId);
+
+      setTasks(updatedTasks);
+      setCategories(filteredCategories);
+
+      // If we're currently viewing the deleted category, switch to inbox
+      if (filter.category === categoryId) {
+        setFilter({...filter, category: 'inbox'});
+      }
+
+      // await axios.delete(`/api/categories/${categoryId}`);
+      console.log('Deleted category:', categoryId);
+    } catch (error) {
+      console.error('Error deleting category:', error);
     }
   };
 
@@ -1077,11 +1132,11 @@ const Tasks = () => {
                           getProgress={getProgress}
                           getDeadlineType={getDeadlineType}
                           droppingOnTask={droppingOnTask}
+                          handleTagChange={handleTagChange}
                         />
                       ))}
 
                     {/* Then show tasks grouped by active subcategories */}
-                    // Modify the part in the render where subcategory tasks are displayed
                     {activeSubcategoryIds.map(subcatId => {
                       const subcategory = categories.find(cat => cat.id === subcatId);
                       const subcategoryTasks = topLevelTasks.filter(task => task.category === subcatId);
@@ -1089,34 +1144,48 @@ const Tasks = () => {
                       return (
                         <div key={subcatId} className="subcategory-section">
                           <h3 className="subcategory-heading">{subcategory.name}</h3>
-                          {subcategoryTasks.length > 0 ? (
-                            subcategoryTasks.map((task, index) => (
-                              <TaskItem
-                                key={task.id}
-                                task={task}
-                                index={index}
-                                tasks={tasks}
-                                expandedTasks={expandedTasks}
-                                setExpandedTasks={setExpandedTasks}
-                                toggleComplete={toggleComplete}
-                                handleDateClick={handleDateClick}
-                                handleTagClick={handleTagClick}
-                                handleCategoryClick={handleCategoryClick}
-                                showContextMenu={showContextMenu}
-                                setShowContextMenu={setShowContextMenu}
-                                contextMenuRef={contextMenuRef}
-                                openEditModal={openEditModal}
-                                deleteTask={deleteTask}
-                                getProgress={getProgress}
-                                getDeadlineType={getDeadlineType}
-                                droppingOnTask={droppingOnTask}
-                              />
-                            ))
-                          ) : (
-                            <div className="no-tasks-placeholder">
-                              <p>No tasks in this subcategory</p>
-                            </div>
-                          )}
+                          <Droppable droppableId={`subcategory-${subcatId}`}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={`subcategory-droppable ${
+                                  snapshot.isDraggingOver ? 'dragging-over' : ''
+                                } ${droppingInCategory === subcatId ? 'dropping-target' : ''}`}
+                              >
+                                {subcategoryTasks.length > 0 ? (
+                                  subcategoryTasks.map((task, index) => (
+                                    <TaskItem
+                                      key={task.id}
+                                      task={task}
+                                      index={index}
+                                      tasks={tasks}
+                                      expandedTasks={expandedTasks}
+                                      setExpandedTasks={setExpandedTasks}
+                                      toggleComplete={toggleComplete}
+                                      handleDateClick={handleDateClick}
+                                      handleTagClick={handleTagClick}
+                                      handleCategoryClick={handleCategoryClick}
+                                      showContextMenu={showContextMenu}
+                                      setShowContextMenu={setShowContextMenu}
+                                      contextMenuRef={contextMenuRef}
+                                      openEditModal={openEditModal}
+                                      deleteTask={deleteTask}
+                                      getProgress={getProgress}
+                                      getDeadlineType={getDeadlineType}
+                                      droppingOnTask={droppingOnTask}
+                                      handleTagChange={handleTagChange}
+                                    />
+                                  ))
+                                ) : (
+                                  <div className="no-tasks-placeholder">
+                                    <p>No tasks in this subcategory</p>
+                                  </div>
+                                )}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
                         </div>
                       );
                     })}
@@ -1143,6 +1212,7 @@ const Tasks = () => {
                       getProgress={getProgress}
                       getDeadlineType={getDeadlineType}
                       droppingOnTask={droppingOnTask}
+                      handleTagChange={handleTagChange}
                     />
                   ))
                 )}
@@ -1286,6 +1356,7 @@ const Tasks = () => {
           <CategoryManager
             categories={categories}
             onAddCategory={handleAddCategory}
+            onDeleteCategory={handleDeleteCategory}
             onClose={() => setShowCategoryManager(false)}
           />
         </div>
@@ -1346,11 +1417,30 @@ const TaskItem = ({
   deleteTask,
   getProgress,
   getDeadlineType,
-  droppingOnTask
+  droppingOnTask,
+  handleTagChange
 }) => {
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const progress = hasSubtasks ? getProgress(task.subtasks) : 0;
   const isExpanded = expandedTasks.includes(task.id);
+  const [isTagEditing, setIsTagEditing] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+
+  const handleTagEditStart = () => {
+    setIsTagEditing(true);
+  };
+
+  const handleTagInputKeyDown = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      const updatedTags = [...task.tags, tagInput.trim()];
+      handleTagChange(task.id, updatedTags);
+      setTagInput('');
+      setIsTagEditing(false);
+    } else if (e.key === 'Escape') {
+      setIsTagEditing(false);
+      setTagInput('');
+    }
+  };
 
   return (
     <Draggable key={task.id} draggableId={String(task.id)} index={index}>
@@ -1359,7 +1449,7 @@ const TaskItem = ({
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`task-item ${task.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''} ${droppingOnTask === task.id ? 'dropping-target' : ''}`}
+          className={`task-item ${task.completed ? 'completed' : ''} ${snapshot.isDragging ? 'dragging' : ''} ${droppingOnTask === task.id ? 'dropping-target' : ''} ${task.parent_id ? 'subtask-item' : ''}`}
         >
           {hasSubtasks && (
             <div className="progress-container">
@@ -1420,6 +1510,26 @@ const TaskItem = ({
                       onClick={() => handleTagClick(task, idx)}
                     />
                   ))}
+                  {isTagEditing ? (
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleTagInputKeyDown}
+                      onBlur={() => setIsTagEditing(false)}
+                      className="tag-input"
+                      placeholder="Add tag..."
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      className="add-tag-btn"
+                      onClick={handleTagEditStart}
+                      title="Add tag"
+                    >
+                      <FontAwesomeIcon icon={faTags} />
+                    </button>
+                  )}
                 </div>
 
                 <span
@@ -1520,11 +1630,46 @@ const TaskItem = ({
                                 ))}
                               </div>
                             )}
+
+                            <div className="subtask-actions">
+                              <button
+                                className="more-btn small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowContextMenu(showContextMenu === subtask.id ? null : subtask.id);
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faEllipsisVertical}/>
+                              </button>
+                              {showContextMenu === subtask.id && (
+                                <div className="context-menu small" ref={contextMenuRef}>
+                                  <button
+                                    onClick={() => {
+                                      openEditModal(subtask);
+                                      setShowContextMenu(null);
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faEdit}/> Edit
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      deleteTask(subtask.id);
+                                      setShowContextMenu(null);
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faTrash}/> Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </Draggable>
                     ))}
                   {provided.placeholder}
+                  <div className="subtask-drop-indicator">
+                    <span>Drag a task here to add as a subtask</span>
+                  </div>
                 </div>
               )}
             </Droppable>
