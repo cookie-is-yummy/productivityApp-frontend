@@ -1072,3 +1072,185 @@ input:focus, textarea:focus {
     font-size: 0.8rem;
   }
 }
+
+/* Additions to handle the tag deletion and task renaming */
+
+.tag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-delete {
+  margin-left: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.tag-delete:hover {
+  opacity: 1;
+}
+
+.task-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rename-btn {
+  opacity: 0;
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 0.8em;
+}
+
+.task-title:hover .rename-btn {
+  opacity: 0.7;
+}
+
+.rename-btn:hover {
+  opacity: 1;
+  color: var(--primary);
+}
+
+.task-title-edit input {
+  width: 100%;
+  font-size: 1em;
+  font-weight: bold;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+/* Color Picker Styles */
+.color-picker {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  width: 300px;
+}
+
+.color-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.color-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.color-option {
+  height: 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.color-option:hover {
+  transform: scale(1.05);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete task button */
+.delete-task-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.task-item:hover .delete-task-btn {
+  opacity: 0.7;
+}
+
+.delete-task-btn:hover {
+  color: var(--error);
+  opacity: 1;
+}
+
+/* Category management improvements */
+.category-item {
+  position: relative;
+  padding: 8px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.category-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.category-item:hover .category-actions {
+  opacity: 1;
+}
+
+.category-edit-btn,
+.category-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+.category-edit-btn {
+  color: var(--primary);
+}
+
+.category-delete-btn {
+  color: var(--error);
+}
+
+.category-edit-form {
+  flex: 1;
+}
+
+.category-edit-form input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.nested-categories {
+  margin-left: 20px;
+}
+
+/* Improve combining dragging experience */
+.dragging {
+  opacity: 0.8;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dragging-over {
+  background-color: rgba(0, 123, 255, 0.05);
+  border: 2px dashed var(--primary);
+}
+
+.dropping-target {
+  background-color: rgba(0, 123, 255, 0.1) !important;
+  border: 2px solid var(--primary) !important;
+}
