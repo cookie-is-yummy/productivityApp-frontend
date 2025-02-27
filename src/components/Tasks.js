@@ -939,7 +939,12 @@ const Tasks = () => {
     const fetchTasks = async () => {
       try {
         const response = await axios.get('/api/tasks');
-        setTasks(response.data);
+        const tasksWithStringIds = response.data.map(task => ({
+          ...task,
+          id: task.id.toString(),
+          parent_id: task.parent_id ? task.parent_id.toString() : null
+        }));
+        setTasks(tasksWithStringIds);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       }
@@ -1041,13 +1046,13 @@ const Tasks = () => {
     // Exit if dropped outside a droppable area and not combining
     if (!destination && !combine) return;
 
-    const taskId = parseInt(draggableId) || draggableId;
+    const taskId = draggableId;
     const sourceTask = tasks.find(t => t.id === taskId);
     if (!sourceTask) return; // Guard against undefined source task
 
     // Handle combining for subtasks (primary new feature)
     if (combine) {
-      const parentId = parseInt(combine.draggableId) || combine.draggableId;
+      const parentId = combine.draggableId;
 
       // Prevent cycles in task hierarchy
       if (wouldCreateCycle(parentId, taskId)) {
@@ -1214,19 +1219,18 @@ const Tasks = () => {
 
     // Handle case: Reordering within the same list
     if (source.droppableId === destination.droppableId) {
-      const reorderedTasks = Array.from(tasks);
       const filteredTasks = getFilteredTasks();
+      const taskIds = filteredTasks.map(task => task.id);
+      const movedTaskId = taskIds[source.index];
 
-      const [movedTask] = filteredTasks.splice(source.index, 1);
-      filteredTasks.splice(destination.index, 0, movedTask);
+      // Remove from old position and insert at new position
+      taskIds.splice(source.index, 1);
+      taskIds.splice(destination.index, 0, movedTaskId);
 
-      // Update the order of tasks
-      const updatedTasks = reorderedTasks.map(task => {
-        const index = filteredTasks.findIndex(t => t.id === task.id);
-        if (index !== -1) {
-          return { ...task, task_order: index };
-        }
-        return task;
+      // Update task_order based on new positions
+      const updatedTasks = tasks.map(task => {
+        const newOrder = taskIds.indexOf(task.id);
+        return newOrder !== -1 ? { ...task, task_order: newOrder } : task;
       });
 
       setTasks(updatedTasks);
