@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHouse,
@@ -6,7 +7,8 @@ import {
   faCalendar,
   faSyncAlt,
   faGear,
-  faBook
+  faBook,
+  faBars
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Sidebar.css';
 
@@ -14,45 +16,59 @@ const menuItems = [
     {
         category: 'MAIN',
         items: [
-            { id: 'home', label: 'Home', icon: <FontAwesomeIcon icon={faHouse} style={{ fontSize: '32px' }} /> },
-            { id: 'tasks', label: 'Tasks', icon: <FontAwesomeIcon icon={faListCheck} style={{ fontSize: '32px' }} /> },
-            { id: 'calendar', label: 'Calendar', icon: <FontAwesomeIcon icon={faCalendar} style={{ fontSize: '32px' }} /> },
-            { id: 'routine', label: 'Routine', icon: <FontAwesomeIcon icon={faSyncAlt} style={{ fontSize: '32px' }} /> },
+            { id: 'home', path: '/', label: 'Home', icon: <FontAwesomeIcon icon={faHouse} /> },
+            { id: 'tasks', path: '/tasks', label: 'Tasks', icon: <FontAwesomeIcon icon={faListCheck} /> },
+            { id: 'calendar', path: '/calendar', label: 'Calendar', icon: <FontAwesomeIcon icon={faCalendar} /> },
+            { id: 'routine', path: '/routine', label: 'Routine', icon: <FontAwesomeIcon icon={faSyncAlt} /> },
         ]
     },
     {
         category: 'SETTINGS',
         items: [
-            { id: 'settings', label: 'Settings', icon: <FontAwesomeIcon icon={faGear} style={{ fontSize: '32px' }} /> }
+            { id: 'settings', path: '/settings', label: 'Settings', icon: <FontAwesomeIcon icon={faGear} /> }
         ]
     }
 ];
 
-const Sidebar = ({ selectedMenu, setSelectedMenu }) => {
+const Sidebar = () => {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    const toggleMobileMenu = () => {
+        setMobileMenuOpen(!mobileMenuOpen);
+    };
+
     return (
-        <nav className="sidebar">
-            <div className="sidebar-header">
-                <FontAwesomeIcon icon={faBook} style={{ fontSize: '32px', marginRight: '8px' }} />
-                <h2>Productivity App</h2>
-            </div>
-            <ul className="menu-items">
-                {menuItems.map((group) => (
-                    <div key={group.category}>
-                        <div className="menu-category">{group.category}</div>
-                        {group.items.map((item) => (
-                            <li
-                                key={item.id}
-                                className={`menu-item ${selectedMenu === item.id ? 'active' : ''}`}
-                                onClick={() => setSelectedMenu(item.id)}
-                            >
-                                <span className="menu-icon">{item.icon}</span>
-                                {item.label}
-                            </li>
-                        ))}
-                    </div>
-                ))}
-            </ul>
-        </nav>
+        <>
+            <button className="mobile-menu-toggle" onClick={toggleMobileMenu}>
+                <FontAwesomeIcon icon={faBars} />
+            </button>
+
+            <nav className={`sidebar ${mobileMenuOpen ? 'mobile-visible' : ''}`}>
+                <div className="sidebar-header">
+                    <FontAwesomeIcon icon={faBook} className="app-icon" />
+                    <h2>Productivity App</h2>
+                </div>
+                <ul className="menu-items">
+                    {menuItems.map((group) => (
+                        <div key={group.category}>
+                            <div className="menu-category">{group.category}</div>
+                            {group.items.map((item) => (
+                                <li key={item.id} className="menu-item">
+                                    <NavLink
+                                        to={item.path}
+                                        className={({ isActive }) => isActive ? 'active' : ''}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <span className="menu-icon">{item.icon}</span>
+                                        {item.label}
+                                    </NavLink>
+                                </li>
+                            ))}
+                        </div>
+                    ))}
+                </ul>
+            </nav>
+        </>
     );
 };
 

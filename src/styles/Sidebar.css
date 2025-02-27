@@ -1,10 +1,13 @@
 .sidebar {
   width: 240px;
   height: 100vh;
-  position: fixed;
+  position: sticky;
+  top: 0;
   background-color: white;
   padding: 1.5rem;
   border-right: 1px solid #f1f1f1;
+  overflow-y: auto;
+  transition: transform 0.3s ease;
 }
 
 .sidebar-header {
@@ -13,12 +16,6 @@
   gap: 12px;
   padding: 1rem 0;
   margin-bottom: 1rem;
-}
-
-.app-icon {
-  width: 28px;
-  height: 28px;
-  color: #1a1a1a;
 }
 
 .sidebar-header h2 {
@@ -31,6 +28,7 @@
 .menu-items {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .menu-category {
@@ -43,8 +41,12 @@
 }
 
 .menu-item {
-  padding: 0.75rem 1rem;
   margin: 0.25rem 0;
+  border-radius: 8px;
+}
+
+.menu-item a {
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -53,14 +55,15 @@
   transition: all 0.2s ease;
   font-size: 0.9rem;
   font-weight: 500;
+  text-decoration: none;
 }
 
-.menu-item:hover {
+.menu-item a:hover {
   background-color: #f8f8f8;
   color: #1a1a1a;
 }
 
-.menu-item.active {
+.menu-item a.active {
   background-color: #f1f1f1;
   color: #1a1a1a;
 }
@@ -70,11 +73,45 @@
   height: 20px;
   margin-right: 1rem;
   color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.menu-icon svg {
-  width: 100%;
-  height: 100%;
-  stroke: currentColor;
+/* Mobile styles */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background-color: white;
+  color: #1a1a1a;
+  border: 1px solid #f1f1f1;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 20px;
 }
 
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    z-index: 100;
+    transform: translateX(-100%);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar.mobile-visible {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-toggle {
+    display: block;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}

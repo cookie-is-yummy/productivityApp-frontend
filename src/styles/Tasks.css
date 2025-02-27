@@ -260,8 +260,14 @@
   transform: rotate(180deg);
 }
 
+.subcategory-button.dragging-over {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
 .subcategory-section {
   margin-bottom: 2rem;
+  margin-top: 20px;
+  border-top: 1px solid #e0e0e0;
 }
 
 .subcategory-heading {
@@ -272,7 +278,7 @@
   border-bottom: 1px solid #eee;
 }
 
-/* Task Item Styling */
+/* Task Item Styling with Enhanced Drag and Drop */
 .task-item {
   padding: 1rem;
   margin-bottom: 1rem;
@@ -282,6 +288,7 @@
   position: relative;
   z-index: 2;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  cursor: grab;
 }
 
 .task-item:hover {
@@ -291,15 +298,20 @@
   box-shadow: 0 4px 8px rgba(0,0,0,0.04);
 }
 
+/* Improved drag source styling */
 .task-item.dragging {
   box-shadow: 0 8px 16px rgba(0,0,0,0.1);
   transform: scale(1.02);
   z-index: 100;
+  opacity: 0.9;
+  cursor: grabbing;
 }
 
+/* Improved drop target highlighting */
 .task-item.dropping-target {
-  background-color: #f0f7ff;
-  border: 2px dashed #3498db;
+  background-color: rgba(99, 102, 241, 0.15);
+  border: 2px dashed #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
 }
 
 .task-item.completed {
@@ -362,7 +374,7 @@
   white-space: nowrap;
 }
 
-/* Subtask toggle */
+/* Improved subtask toggle */
 .subtask-toggle {
   width: 24px;
   height: 24px;
@@ -420,20 +432,34 @@
   gap: 0.5rem;
 }
 
+/* Tag styling with improved hover state */
 .tag {
   display: inline-flex;
   align-items: center;
   background: #e0f2fe;
   color: #0369a1;
-  padding: 0.35rem 0.6rem;
+    padding: 0.35rem 0.6rem;
   border-radius: 6px;
   font-size: 0.85rem;
   transition: all 0.2s;
   cursor: pointer;
+  position: relative;
 }
 
 .tag:hover {
   filter: brightness(0.95);
+  transform: scale(1.02);
+}
+
+.tag-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 /* Deadline colors */
@@ -529,20 +555,37 @@
   background: #f8f8f8;
 }
 
-/* Subtask styling */
+/* Enhanced Subtask styling */
 .subtasks {
   margin-top: 1rem;
   margin-left: 2rem;
   border-left: 2px solid #eee;
   padding-left: 1rem;
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 0.5rem;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .subtasks.expanded {
   display: flex;
+  max-height: none;
+}
+
+.subtasks.dragging-over {
+  background-color: rgba(99, 102, 241, 0.08);
+  border: 2px dashed #6366f1;
+  border-left: 2px solid #6366f1;
+  padding: 0.5rem;
+  margin-left: 1.5rem;
+}
+
+/* Drag mode: always show subtasks areas */
+.drag-mode .subtasks {
+  display: flex;
+  min-height: 40px;
 }
 
 .subtask {
@@ -579,6 +622,53 @@
 .due-date.small, .tag.small {
   font-size: 0.8rem;
   padding: 0.25rem 0.4rem;
+}
+
+/* Subtask drop indicator - only shows during active dragging */
+.subtask-drop-indicator {
+  display: none;
+  padding: 8px;
+  text-align: center;
+  color: #6366f1;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.drag-mode .subtask-drop-indicator {
+  display: block;
+}
+
+.subtasks.dragging-over .subtask-drop-indicator {
+  font-weight: bold;
+  background-color: rgba(99, 102, 241, 0.15);
+}
+
+/* Main drop area for top-level tasks */
+.main-drop-area {
+  margin: 10px;
+  padding: 15px;
+  border-radius: 6px;
+  border: 2px dashed #d1d5db;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(99, 102, 241, 0.05);
+  transition: all 0.3s ease;
+}
+
+.main-drop-area:hover,
+.task-list.main-dragging-over .main-drop-area {
+  border-color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+/* Styles for subtask indicators and management */
+.subtask-item {
+  border-left: 3px solid #e0e7ff;
+  margin-left: 15px;
+  position: relative;
 }
 
 /* Modal styling */
@@ -776,26 +866,86 @@ input:focus, textarea:focus {
 }
 
 .category-item {
-  padding: 0.5rem 0.75rem;
+  position: relative;
+  padding: 8px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
   background: #f9f9f9;
   border-radius: 6px;
 }
 
 .category-indent {
+  position: absolute;
+  left: 0.75rem;
   color: #999;
   margin-right: 0.5rem;
+}
+
+.category-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.category-item:hover .category-actions {
+  opacity: 1;
+}
+
+.category-edit-btn,
+.category-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+.category-edit-btn {
+  color: #3b82f6;
+}
+
+.category-delete-btn {
+  color: #ef4444;
+}
+
+.category-edit-form {
+  flex: 1;
+}
+
+.category-edit-form input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.nested-categories {
+  margin-left: 20px;
 }
 
 /* Color Picker */
 .color-picker-container {
   position: fixed;
-  z-index: 1100;
-  right: 24px;
-  top: 24px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
 
 .color-picker {
-  width: 100%;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  position: relative;
+  width: 300px;
   max-width: 300px;
 }
 
@@ -810,12 +960,13 @@ input:focus, textarea:focus {
   height: 40px;
   border-radius: 8px;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform 0.1s, box-shadow 0.2s;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .color-option:hover {
   transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Custom Calendar Styling */
@@ -1025,13 +1176,158 @@ input:focus, textarea:focus {
   border: none;
 }
 
+/* Task title edit and other actions */
+.task-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
 
-/* Visual indication when dragging over a task */
-.subtasks.dragging-over {
-  background-color: #f0f8ff;
-  border-radius: 8px;
-  padding: 0.5rem;
-  border-left: 2px solid #3498db;
+.rename-btn {
+  opacity: 0;
+  margin-left: 8px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 0.8em;
+}
+
+.task-title:hover .rename-btn {
+  opacity: 0.7;
+}
+
+.rename-btn:hover {
+  opacity: 1;
+  color: #3b82f6;
+}
+
+.task-title-edit input {
+  width: 100%;
+  font-size: 1em;
+  font-weight: bold;
+  padding: 4px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+/* Make subtask a top-level task button */
+.make-toplevel-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8em;
+  color: #666;
+  margin-left: 8px;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.task-title:hover .make-toplevel-btn {
+  opacity: 0.7;
+}
+
+.make-toplevel-btn:hover {
+  color: #3b82f6;
+  opacity: 1;
+}
+
+/* Delete task button */
+.delete-task-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 5px;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.task-item:hover .delete-task-btn {
+  opacity: 0.7;
+}
+
+.delete-task-btn:hover {
+  color: #ef4444;
+  opacity: 1;
+}
+
+/* Subcategory drop indicators */
+.subcategory-drop-indicator {
+  display: none;
+  text-align: center;
+  padding: 6px;
+  color: #6366f1;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  margin: 5px 0;
+}
+
+.drag-mode .subcategory-drop-indicator {
+  display: block;
+}
+
+.subcategory-drop-indicator.active {
+  background-color: rgba(99, 102, 241, 0.1);
+  border: 1px dashed #6366f1;
+  font-weight: 500;
+}
+
+/* Drop target in subcategory */
+.subcategory-droppable.dragging-over,
+.subcategory-droppable.dropping-target {
+  background-color: rgba(99, 102, 241, 0.1);
+  border-radius: 6px;
+}
+
+.subcategory-droppable.dragging-over {
+  outline: 2px dashed #6366f1;
+}
+
+/* Enhanced drag instruction overlay */
+.drag-instruction-overlay {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  width: 100%;
+  padding: 10px 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(5px);
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.drag-instruction {
+  font-weight: 500;
+  color: #4f46e5;
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.drag-instruction p {
+  margin: 10px 0;
+}
+
+.drag-instruction-secondary {
+  font-size: 0.9em;
+  color: #6b7280;
+}
+
+/* Empty state message */
+.no-tasks-placeholder {
+  text-align: center;
+  padding: 30px 0;
+  color: #6b7280;
+}
+
+.no-tasks-placeholder p {
+  margin-bottom: 15px;
 }
 
 /* Responsive design */
@@ -1073,375 +1369,262 @@ input:focus, textarea:focus {
   }
 }
 
-/* Additions to handle the tag deletion and task renaming */
 
-.tag {
+/* Add these styles to your existing CSS file to support the new features */
+
+/* Improved styles for task completion transitions */
+.task-item {
+  transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
   position: relative;
-  display: inline-flex;
-  align-items: center;
 }
 
-.tag-delete {
-  margin-left: 4px;
-  font-size: 10px;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.tag-delete:hover {
-  opacity: 1;
-}
-
-.task-title {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.rename-btn {
-  opacity: 0;
-  margin-left: 8px;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: opacity 0.2s;
-  font-size: 0.8em;
-}
-
-.task-title:hover .rename-btn {
-  opacity: 0.7;
-}
-
-.rename-btn:hover {
-  opacity: 1;
-  color: var(--primary);
-}
-
-.task-title-edit input {
-  width: 100%;
-  font-size: 1em;
-  font-weight: bold;
-  padding: 4px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-}
-
-/* Color Picker Styles */
-.color-picker {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 15px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  width: 300px;
-}
-
-.color-picker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.color-options {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.color-option {
-  height: 40px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.color-option:hover {
-  transform: scale(1.05);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Delete task button */
-.delete-task-btn {
-  opacity: 0;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 5px;
-  transition: opacity 0.2s, color 0.2s;
-}
-
-.task-item:hover .delete-task-btn {
-  opacity: 0.7;
-}
-
-.delete-task-btn:hover {
-  color: var(--error);
-  opacity: 1;
-}
-
-/* Category management improvements */
-.category-item {
-  position: relative;
-  padding: 8px;
-  margin-bottom: 2px;
-  display: flex;
-  align-items: center;
-}
-
-.category-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 5px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.category-item:hover .category-actions {
-  opacity: 1;
-}
-
-.category-edit-btn,
-.category-delete-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.8em;
-}
-
-.category-edit-btn {
-  color: var(--primary);
-}
-
-.category-delete-btn {
-  color: var(--error);
-}
-
-.category-edit-form {
-  flex: 1;
-}
-
-.category-edit-form input {
-  width: 100%;
-  padding: 4px 8px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-}
-
-.nested-categories {
-  margin-left: 20px;
-}
-
-/* Improve combining dragging experience */
-.dragging {
+.task-item.completed {
+  transition: opacity 0.5s ease, transform 0.5s ease, background-color 0.3s ease;
   opacity: 0.8;
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
 }
 
-.dragging-over {
-  background-color: rgba(0, 123, 255, 0.05);
-  border: 2px dashed var(--primary);
-}
-
-.dropping-target {
-  background-color: rgba(0, 123, 255, 0.1) !important;
-  border: 2px solid var(--primary) !important;
-}
-
-/* Additional styles for color picker positioning */
-.color-picker-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-}
-
-/* Improved task drag and drop indicators */
-.dropping-target {
-  position: relative;
-}
-
-.dropping-target:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 2px solid var(--primary);
-  background-color: rgba(0, 123, 255, 0.05);
-  pointer-events: none;
-  z-index: 2;
-  border-radius: 8px;
-}
-
-/* Make subtask drop areas more visible */
-.subtasks.dragging-over .subtask-drop-indicator {
-  opacity: 1;
-  background-color: rgba(0, 123, 255, 0.1);
-  border: 2px dashed var(--primary);
-}
-
-.subtask-drop-indicator {
-  width: 100%;
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 8px;
-  text-align: center;
-  opacity: 0.5;
-  transition: all 0.2s ease;
-}
-
-/* Subtask combining styles */
-[data-rbd-draggable-id] {
-  transition: background-color 0.2s ease;
-}
-
-[data-rbd-draggable-id][data-rbd-combine-with] {
-  background-color: rgba(0, 123, 255, 0.15) !important;
-  box-shadow: 0 0 0 2px var(--primary) !important;
-}
-
-/* Make subcategory sections more distinct */
-.subcategory-section {
-  margin-top: 20px;
-  margin-bottom: 10px;
-  border-top: 1px solid var(--border-color);
-}
-
-.subcategory-heading {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  font-size: 1.1em;
-  color: var(--text-secondary);
-}
-
-/* Improved tag hover state */
-.tag {
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-.tag:hover {
-  transform: scale(1.02);
-}
-
-.tag-delete {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  margin-left: 4px;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-/* Category manager improvements */
-.category-edit-form input {
-  padding: 5px 8px;
-  width: 100%;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-}
-
-/* Styles for subtask indicators and management */
-.subtask-item {
-  border-left: 3px solid var(--primary-light);
-  margin-left: 15px;
-  position: relative;
-}
-
-.make-toplevel-btn {
-  opacity: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.8em;
-  color: var(--text-secondary);
-  margin-left: 8px;
-  transition: opacity 0.2s, color 0.2s;
-}
-
-.task-title:hover .make-toplevel-btn {
-  opacity: 0.7;
-}
-
-.make-toplevel-btn:hover {
-  color: var(--primary);
-  opacity: 1;
-}
-
-/* Drag and drop improvements */
-.main-dragging-over {
-  background-color: rgba(0, 123, 255, 0.05);
-  border: 2px dashed var(--primary);
-}
-
-/* Make the drop area more noticeable */
-.main-drop-area {
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px dashed var(--primary-light);
-  margin: 20px 0;
-  border-radius: 8px;
-  background-color: rgba(0, 123, 255, 0.05);
-  transition: all 0.3s ease;
-}
-
-.main-drop-area:hover {
-  background-color: rgba(0, 123, 255, 0.1);
-  border-color: var(--primary);
-}
-
-/* Enhanced drag instruction overlay */
-.drag-instruction {
-  text-align: center;
-  padding: 20px;
-  border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-}
-
-.drag-instruction p {
-  margin: 10px 0;
-}
-
-.drag-instruction-secondary {
-  font-size: 0.9em;
-  color: var(--text-secondary);
-}
-
-/* Auto-expand subtasks when parent is expanded */
+/* Improve subtask collapsing animations */
 .subtasks {
-  display: none;
-  flex-direction: column;
-  padding-left: 20px;
-  transition: all 0.3s ease;
+  transition: height 0.3s ease-in-out, opacity 0.3s ease;
+  overflow: hidden;
+  will-change: height; /* Optimize for animations */
 }
 
 .subtasks.expanded {
-  display: flex;
+  height: auto !important; /* Override inline height when expanded */
 }
 
-/* When dragging, always show subtasks areas */
-.drag-mode .subtasks {
+/* Improved drag & drop styles */
+.task-item.dragging {
+  opacity: 0.9;
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Make drop areas more visible during drag */
+.subtask-drop-indicator {
+  padding: 10px;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  margin: 8px 0;
+  text-align: center;
+  background-color: rgba(240, 240, 255, 0.5);
+}
+
+.subcategory-drop-indicator {
+  padding: 8px;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  margin: 4px 0;
+  text-align: center;
+  background-color: rgba(240, 255, 240, 0.5);
+}
+
+/* Make dropping targets more visible */
+.dropping-target {
+  background-color: rgba(230, 245, 255, 0.7);
+  box-shadow: 0 0 0 2px #4a9ae1;
+}
+
+/* Accessibility improvements */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #4a9ae1;
+  outline-offset: 2px;
+}
+
+/* Fix for cursor lag when dragging */
+.react-beautiful-dnd-drag-handle {
+  cursor: grab !important;
+}
+
+body.dragging * {
+  cursor: grabbing !important;
+}
+
+/* Improved mobile responsiveness */
+@media (max-width: 768px) {
+  .task-main {
+    flex-direction: column;
+  }
+
+  .task-actions {
+    margin-top: 8px;
+    justify-content: flex-end;
+  }
+}
+
+/* Add these styles to your existing CSS file to support the new features */
+
+/* Improved styles for task completion transitions */
+.task-item {
+  transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+  position: relative;
+}
+
+.task-item.completed {
+  transition: opacity 0.5s ease, transform 0.5s ease, background-color 0.3s ease;
+  opacity: 0.8;
+}
+
+/* Improve subtask collapsing animations */
+.subtasks {
+  transition: height 0.3s ease-in-out, opacity 0.3s ease;
+  overflow: hidden;
+  will-change: height; /* Optimize for animations */
+}
+
+.subtasks.expanded {
+  height: auto !important; /* Override inline height when expanded */
+}
+
+.subtasks.collapsed {
+  height: 0 !important;
+  padding: 0;
+  margin: 0;
+}
+
+.subtasks-wrapper {
+  padding: 8px 0;
+}
+
+/* Improved drag & drop styles */
+.task-item.dragging {
+  opacity: 0.9;
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.task-drag-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: grab;
+  opacity: 0.2;
+  transition: opacity 0.2s;
+}
+
+.task-drag-handle:hover,
+.task-item:hover .task-drag-handle {
+  opacity: 0.6;
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Make drop areas more visible during drag */
+.subtask-drop-indicator {
+  padding: 10px;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  margin: 8px 0;
+  text-align: center;
+  background-color: rgba(240, 240, 255, 0.5);
+}
+
+.subcategory-drop-indicator {
+  padding: 8px;
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  margin: 4px 0;
+  text-align: center;
+  background-color: rgba(240, 255, 240, 0.5);
+}
+
+/* Make dropping targets more visible */
+.dropping-target {
+  background-color: rgba(230, 245, 255, 0.7);
+  box-shadow: 0 0 0 2px #4a9ae1;
+}
+
+/* Better subtask toggle button */
+.subtask-toggle {
+  transition: transform 0.3s ease;
+  padding: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+}
+
+.subtask-toggle.expanded svg {
+  transform: rotate(180deg);
+}
+
+/* Accessibility improvements */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #4a9ae1;
+  outline-offset: 2px;
+}
+
+/* Fix for cursor lag when dragging */
+.react-beautiful-dnd-drag-handle {
+  cursor: grab !important;
+}
+
+body.dragging * {
+  cursor: grabbing !important;
+}
+
+/* Fix for subcategory droppables */
+.subcategory-droppable {
   min-height: 40px;
+  border-radius: 4px;
+  padding: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.subcategory-droppable.dragging-over {
+  background-color: rgba(230, 245, 255, 0.7);
+}
+
+/* Custom task list styles to replace the main droppable */
+.task-list-container {
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--bg-surface, #fff);
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.primary-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Fix for the subtask collapse button */
+.subtask-toggle {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.subtask-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Improved mobile responsiveness */
+@media (max-width: 768px) {
+  .task-main {
+    flex-direction: column;
+  }
+
+  .task-actions {
+    margin-top: 8px;
+    justify-content: flex-end;
+  }
 }
