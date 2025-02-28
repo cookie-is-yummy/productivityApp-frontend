@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays,
   faEdit, faTrash, faCaretDown, faPalette, faFolder, faChevronDown,
-  faTimes, faPen, faArrowUp
+  faTimes, faPen, faArrowUp, faGripLines
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Tasks.css';
 import axios from '../axiosinstance';
@@ -30,16 +30,19 @@ const CustomDropdown = ({ value, onChange, options, placeholder, className, onSu
 
   return (
     <div className={`custom-dropdown ${className || ''}`} ref={dropdownRef}>
-      <div
+      <button
+        type="button"
         className="dropdown-selected"
         onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
       >
         {options.find(opt => opt.value === value)?.label || placeholder || 'Select...'}
         <FontAwesomeIcon icon={faCaretDown} className={`dropdown-caret ${isOpen ? 'open' : ''}`} />
-      </div>
+      </button>
 
       {isOpen && (
-        <div className="dropdown-menu">
+        <div className="dropdown-menu" role="listbox">
           {options.map(option => (
             <div
               key={option.value}
@@ -55,6 +58,8 @@ const CustomDropdown = ({ value, onChange, options, placeholder, className, onSu
                   setIsOpen(false);
                 }
               }}
+              role="option"
+              aria-selected={option.value === value}
             >
               {option.isSubcategory && <span className="subcategory-indent">└ </span>}
               {option.label}
@@ -129,7 +134,7 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
 
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+      days.push(<div key={`empty-${i}`} className="calendar-day empty" aria-hidden="true"></div>);
     }
 
     // Add days of the month
@@ -142,13 +147,16 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
         displayYear === today.getFullYear();
 
       days.push(
-        <div
+        <button
           key={day}
+          type="button"
           className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
           onClick={() => setDate(dateString)}
+          aria-label={`${monthNames[displayMonth]} ${day}, ${displayYear}`}
+          aria-selected={isSelected}
         >
           {day}
-        </div>
+        </button>
       );
     }
 
@@ -156,32 +164,56 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
   };
 
   return (
-    <div className="date-picker-modal">
+    <div className="date-picker-modal" role="dialog" aria-labelledby="date-picker-title">
       <div className="date-picker-header">
-        <h4>Select Due Date</h4>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <h4 id="date-picker-title">Select Due Date</h4>
+        <button
+          type="button"
+          className="close-btn"
+          onClick={onClose}
+          aria-label="Close date picker"
+        >
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
       </div>
       <div className="date-picker-content">
         {showCalendar ? (
           <div className="custom-calendar">
             <div className="calendar-header">
-              <button className="calendar-nav-btn" onClick={goToPreviousMonth}>&lt;</button>
-              <div className="calendar-title">{monthNames[displayMonth]} {displayYear}</div>
-              <button className="calendar-nav-btn" onClick={goToNextMonth}>&gt;</button>
+              <button
+                type="button"
+                className="calendar-nav-btn"
+                onClick={goToPreviousMonth}
+                aria-label="Previous month"
+              >
+                &lt;
+              </button>
+              <div className="calendar-title" aria-live="polite">
+                {monthNames[displayMonth]} {displayYear}
+              </div>
+              <button
+                type="button"
+                className="calendar-nav-btn"
+                onClick={goToNextMonth}
+                aria-label="Next month"
+              >
+                &gt;
+              </button>
             </div>
-            <div className="calendar-weekdays">
-              <div>Sun</div>
-              <div>Mon</div>
-              <div>Tue</div>
-              <div>Wed</div>
-              <div>Thu</div>
-              <div>Fri</div>
-              <div>Sat</div>
+            <div className="calendar-weekdays" role="rowgroup">
+              <div role="columnheader">Sun</div>
+              <div role="columnheader">Mon</div>
+              <div role="columnheader">Tue</div>
+              <div role="columnheader">Wed</div>
+              <div role="columnheader">Thu</div>
+              <div role="columnheader">Fri</div>
+              <div role="columnheader">Sat</div>
             </div>
-            <div className="calendar-days">
+            <div className="calendar-days" role="grid">
               {renderCalendarDays()}
             </div>
             <button
+              type="button"
               className="calendar-toggle-btn"
               onClick={() => setShowCalendar(false)}
             >
@@ -195,8 +227,10 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="date-input"
+              aria-label="Enter due date"
             />
             <button
+              type="button"
               className="calendar-toggle-btn"
               onClick={() => setShowCalendar(true)}
             >
@@ -206,6 +240,7 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
         )}
         <div className="date-picker-actions">
           <button
+            type="button"
             className="btn-primary"
             onClick={() => {
               onSelect(date);
@@ -215,6 +250,7 @@ const DatePickerModal = ({ selectedDate, onSelect, onClose }) => {
             Apply Date
           </button>
           <button
+            type="button"
             className="btn-secondary"
             onClick={() => {
               setDate('');
@@ -269,15 +305,23 @@ const Tag = ({ tag, onClick, onDelete }) => {
       style={style}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
+      role="button"
+      tabIndex="0"
+      aria-label={`Tag: ${tagName}`}
     >
       {tagName}
       {isHovering && (
-        <span className="tag-delete" onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}>
+        <button
+          type="button"
+          className="tag-delete"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          aria-label={`Remove tag ${tagName}`}
+        >
           <FontAwesomeIcon icon={faTimes} />
-        </span>
+        </button>
       )}
     </span>
   );
@@ -298,21 +342,30 @@ const ColorPicker = ({ onSelect, onClose }) => {
   ];
 
   return (
-    <div className="color-picker">
+    <div className="color-picker" role="dialog" aria-labelledby="color-picker-title">
       <div className="color-picker-header">
-        <h4>Choose a color</h4>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <h4 id="color-picker-title">Choose a color</h4>
+        <button
+          type="button"
+          className="close-btn"
+          onClick={onClose}
+          aria-label="Close color picker"
+        >
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
       </div>
       <div className="color-options">
         {colors.map(color => (
-          <div
+          <button
             key={color.name}
+            type="button"
             className="color-option"
             style={{ backgroundColor: color.hex }}
             onClick={() => {
               onSelect(color.name);
               onClose();
             }}
+            aria-label={`Select ${color.name} color`}
           />
         ))}
       </div>
@@ -342,7 +395,8 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
   // Filter out subcategories for parent dropdown
   const topLevelCategories = categories.filter(cat => !cat.parent_id);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
     if (!newCategory.trim()) return;
 
     onAddCategory(
@@ -358,9 +412,6 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
       return;
     }
 
-    // In a real app, we'd call an API here
-    console.log('Renamed category:', categoryId, 'to', editingName);
-
     setEditingCategory(null);
     onAddCategory(editingName, categories.find(cat => cat.id === categoryId).parent_id, categoryId);
   };
@@ -369,7 +420,7 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
     const children = categoriesByParent[parentId] || [];
     return children.map(category => (
       <div key={category.id} className="category-item">
-        {parentId !== 'root' && <span className="category-indent">└ </span>}
+        {parentId !== 'root' && <span className="category-indent" aria-hidden="true">└ </span>}
 
         {editingCategory === category.id ? (
           <div className="category-edit-form">
@@ -386,6 +437,7 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
                 }
               }}
               onBlur={() => handleRenameCategory(category.id)}
+              aria-label="Category name"
             />
           </div>
         ) : (
@@ -394,19 +446,23 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
             {category.id !== 'inbox' && (
               <div className="category-actions">
                 <button
+                  type="button"
                   className="category-edit-btn"
                   onClick={() => {
                     setEditingCategory(category.id);
                     setEditingName(category.name);
                   }}
                   title="Rename category"
+                  aria-label={`Rename ${category.name} category`}
                 >
                   <FontAwesomeIcon icon={faPen} />
                 </button>
                 <button
+                  type="button"
                   className="category-delete-btn"
                   onClick={() => onDeleteCategory(category.id)}
                   title="Delete category (tasks will be moved to Inbox)"
+                  aria-label={`Delete ${category.name} category`}
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
@@ -425,16 +481,24 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
   };
 
   return (
-    <div className="category-manager">
+    <div className="category-manager" role="dialog" aria-labelledby="category-manager-title">
       <div className="category-manager-header">
-        <h4>Manage Categories</h4>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <h4 id="category-manager-title">Manage Categories</h4>
+        <button
+          type="button"
+          className="close-btn"
+          onClick={onClose}
+          aria-label="Close category manager"
+        >
+          <FontAwesomeIcon icon={faTimes} />
+        </button>
       </div>
 
-      <div className="category-form">
+      <form className="category-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>New Category</label>
+          <label htmlFor="new-category">New Category</label>
           <input
+            id="new-category"
             type="text"
             value={newCategory}
             onChange={e => setNewCategory(e.target.value)}
@@ -444,7 +508,7 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
 
         {topLevelCategories.length > 0 && (
           <div className="form-group">
-            <label>Parent Category (optional)</label>
+            <label id="parent-category-label">Parent Category (optional)</label>
             <CustomDropdown
               value={parentCategory}
               onChange={setParentCategory}
@@ -453,19 +517,20 @@ const CategoryManager = ({ categories, onAddCategory, onDeleteCategory, onClose 
                 ...topLevelCategories.map(cat => ({ value: cat.id, label: cat.name }))
               ]}
               placeholder="None (Top Level)"
+              aria-labelledby="parent-category-label"
             />
           </div>
         )}
 
-        <button className="btn-primary" onClick={handleSubmit}>
+        <button type="submit" className="btn-primary">
           Add Category
         </button>
-      </div>
+      </form>
 
       {categories.length > 0 && (
         <div className="existing-categories">
           <h5>Existing Categories</h5>
-          <div className="category-list">
+          <div className="category-list" role="list">
             {renderCategoryTree()}
           </div>
         </div>
@@ -570,6 +635,8 @@ const TaskItem = ({
     );
   };
 
+  const deadlineType = getDeadlineType(task.due_date);
+
   return (
     <Draggable key={task.id} draggableId={String(task.id)} index={index}>
       {(provided, snapshot) => {
@@ -600,21 +667,12 @@ const TaskItem = ({
               {...provided.dragHandleProps}
               className="task-drag-handle"
               aria-label="Drag task"
-              style={{
-                // Use these styles to create a small drag handle element
-                position: 'absolute',
-                top: '50%',
-                left: '0px',
-                transform: 'translateY(-50%)',
-                width: '10px',
-                height: '70%',
-                cursor: 'grab',
-                opacity: 0.5,
-              }}
-            />
+            >
+              <FontAwesomeIcon icon={faGripLines} />
+            </div>
 
             {hasSubtasks && (
-              <div className="progress-container">
+              <div className="progress-container" role="progressbar" aria-valuenow={progress} aria-valuemin="0" aria-valuemax="100">
                 <div className="progress-bar">
                   <div
                     className="progress-fill"
@@ -632,7 +690,8 @@ const TaskItem = ({
             <div className="task-main">
               {!hasSubtasks && (
                 <button
-                  className="complete-btn"
+                  type="button"
+                  className={`complete-btn ${task.completed ? 'is-completed' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleComplete(task.id);
@@ -645,6 +704,7 @@ const TaskItem = ({
 
               {hasSubtasks && (
                 <button
+                  type="button"
                   ref={collapseButtonRef}
                   className={`subtask-toggle ${isExpanded ? 'expanded' : ''}`}
                   onClick={toggleExpand}
@@ -668,6 +728,7 @@ const TaskItem = ({
                       }}
                       onBlur={handleTitleSave}
                       autoFocus
+                      aria-label="Task title"
                     />
                   </div>
                 ) : (
@@ -677,9 +738,11 @@ const TaskItem = ({
                   >
                     {task.title}
                     <button
+                      type="button"
                       className="rename-btn"
                       onClick={handleTitleEditStart}
                       title="Rename task"
+                      aria-label="Rename task"
                     >
                       <FontAwesomeIcon icon={faPen} />
                     </button>
@@ -687,37 +750,44 @@ const TaskItem = ({
                     {/* Add button to make subtask a top-level task */}
                     {task.parent_id && (
                       <button
+                        type="button"
                         className="make-toplevel-btn"
                         onClick={handleMakeTopLevel}
                         title="Make this a top-level task"
+                        aria-label="Make this a top-level task"
                       >
                         <FontAwesomeIcon icon={faArrowUp} />
                       </button>
                     )}
                   </h3>
                 )}
-                <p>{task.description}</p>
+                {task.description && <p className="task-description">{task.description}</p>}
                 <div className="task-meta">
                   {task.due_date && (
-                    <span
-                      className="due-date"
-                      data-deadline={getDeadlineType(task.due_date)}
+                    <button
+                      type="button"
+                      className={`due-date ${deadlineType ? `deadline-${deadlineType}` : ''}`}
                       onClick={() => handleDateClick(task)}
+                      aria-label={`Due date: ${new Date(task.due_date).toLocaleDateString()}`}
                     >
                       <FontAwesomeIcon icon={faCalendarDays}/>
                       {new Date(task.due_date).toLocaleDateString()}
-                    </span>
+                    </button>
                   )}
 
                   <div className="tags-container">
-                    {Array.isArray(task.tags) && task.tags.map((tag, idx) => (
-                      <Tag
-                        key={idx}
-                        tag={tag}
-                        onClick={() => handleTagClick(task, idx)}
-                        onDelete={() => handleDeleteTag(idx)}
-                      />
-                    ))}
+                    {Array.isArray(task.tags) && task.tags.length > 0 && (
+                      <div className="tags-list" role="list">
+                        {task.tags.map((tag, idx) => (
+                          <Tag
+                            key={idx}
+                            tag={tag}
+                            onClick={() => handleTagClick(task, idx)}
+                            onDelete={() => handleDeleteTag(idx)}
+                          />
+                        ))}
+                      </div>
+                    )}
                     {isTagEditing ? (
                       <input
                         type="text"
@@ -728,72 +798,92 @@ const TaskItem = ({
                         className="tag-input"
                         placeholder="Add tag..."
                         autoFocus
+                        aria-label="Add tag"
                       />
                     ) : (
                       <button
+                        type="button"
                         className="add-tag-btn"
                         onClick={handleTagEditStart}
                         title="Add tag"
+                        aria-label="Add tag"
                       >
                         <FontAwesomeIcon icon={faTags} />
                       </button>
                     )}
                   </div>
 
-                  <span
-                    className="category"
-                    onClick={() => handleCategoryClick(task.category)}
-                  >
-                    {task.category}
-                  </span>
+                  {task.category && (
+                    <button
+                      type="button"
+                      className="category-badge"
+                      onClick={() => handleCategoryClick(task.category)}
+                      aria-label={`Category: ${task.category}`}
+                    >
+                      <FontAwesomeIcon icon={faFolder} className="category-icon" />
+                      {task.category}
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="task-actions">
                 <button
+                  type="button"
                   className="delete-task-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteTask(task.id);
                   }}
                   title="Delete task"
+                  aria-label="Delete task"
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
                 <button
+                  type="button"
                   className="more-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowContextMenu(showContextMenu === task.id ? null : task.id);
                   }}
+                  aria-label="More options"
+                  aria-expanded={showContextMenu === task.id}
+                  aria-haspopup="menu"
                 >
                   <FontAwesomeIcon icon={faEllipsisVertical}/>
                 </button>
                 {showContextMenu === task.id && (
-                  <div className="context-menu" ref={contextMenuRef}>
+                  <div className="context-menu" ref={contextMenuRef} role="menu">
                     <button
+                      type="button"
                       onClick={() => {
                         openEditModal(task);
                         setShowContextMenu(null);
                       }}
+                      role="menuitem"
                     >
                       <FontAwesomeIcon icon={faEdit}/> Edit
                     </button>
                     {task.parent_id && (
                       <button
+                        type="button"
                         onClick={() => {
                           handleRemoveSubtask(task.id, task.parent_id);
                           setShowContextMenu(null);
                         }}
+                        role="menuitem"
                       >
                         <FontAwesomeIcon icon={faArrowUp}/> Make top-level
                       </button>
                     )}
                     <button
+                      type="button"
                       onClick={() => {
                         deleteTask(task.id);
                         setShowContextMenu(null);
                       }}
+                      role="menuitem"
                     >
                       <FontAwesomeIcon icon={faTrash}/> Delete
                     </button>
@@ -920,7 +1010,7 @@ const Tasks = () => {
   const [droppingInCategory, setDroppingInCategory] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedTask, setDraggedTask] = useState(null);
-  // New state for tracking tasks being animated (for smooth completed task movement)
+  // State for tracking tasks being animated (for smooth completed task movement)
   const [tasksInTransition, setTasksInTransition] = useState([]);
   // Animation frame request ID for cleanup
   const animationFrameRef = useRef(null);
@@ -1150,8 +1240,7 @@ const Tasks = () => {
 
     // Handle case: Creating a subtask by dropping onto another task
     if (destination.droppableId.startsWith('task-')) {
-      const parentId = parseInt(destination.droppableId.replace('task-', '')) ||
-                       destination.droppableId.replace('task-', '');
+      const parentId = destination.droppableId.replace('task-', '');
 
       // Prevent cycles in task hierarchy
       if (wouldCreateCycle(parentId, taskId)) {
@@ -1558,7 +1647,13 @@ const Tasks = () => {
   /**
    * Task management functions
    */
-  const handleSubmitTask = async () => {
+  const handleSubmitTask = async (e) => {
+    e?.preventDefault();
+
+    if (!newTask.title.trim()) {
+      return; // Don't submit empty tasks
+    }
+
     try {
       // Fix empty tags array issue
       const processedTags = Array.isArray(newTask.tags) ? newTask.tags : [];
@@ -1720,13 +1815,14 @@ const Tasks = () => {
     setEditingTask(task);
     setNewTask({
       title: task.title,
-      description: task.description,
-      due_date: task.due_date,
-      category: task.category,
-      tags: task.tags,
-      priority: task.priority,
-      subtasks: task.subtasks,
-      parent_id: task.parent_id
+      description: task.description || '',
+      due_date: task.due_date || '',
+      category: task.category || 'inbox',
+      tags: Array.isArray(task.tags) ? task.tags : [],
+      priority: task.priority || 2,
+      subtasks: Array.isArray(task.subtasks) ? task.subtasks : [],
+      parent_id: task.parent_id || null,
+      duration: task.duration || 0
     });
     setShowModal(true);
   };
@@ -1742,7 +1838,8 @@ const Tasks = () => {
       tags: [],
       priority: 2,
       subtasks: [],
-      parent_id: null
+      parent_id: null,
+      duration: 0
     });
   };
 
@@ -1929,8 +2026,10 @@ const Tasks = () => {
               options={getCategoryOptions()}
               className="category-dropdown"
               onSubcategoryClick={handleSubcategoryClick}
+              aria-label="Select category"
             />
             <button
+              type="button"
               className="category-manage-btn"
               onClick={() => setShowCategoryManager(true)}
               aria-label="Manage categories"
@@ -1951,6 +2050,7 @@ const Tasks = () => {
                   { value: 'title', label: 'Name' }
                 ]}
                 className="sort-dropdown"
+                aria-label="Sort tasks by"
               />
             </div>
 
@@ -1961,11 +2061,13 @@ const Tasks = () => {
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
                 className="tag-filter-input"
+                aria-label="Filter tasks by tag"
               />
             </div>
           </div>
         </div>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           className="new-task-button"
           aria-label="Create new task"
@@ -1982,7 +2084,7 @@ const Tasks = () => {
         <div className="task-main-container">
           {/* Subcategory buttons at the top */}
           {currentSubcategories.length > 0 && (
-            <div className="subcategories-container">
+            <div className="subcategories-container" role="region" aria-label="Subcategories">
               {currentSubcategories.map(subcategory => (
                 <Droppable
                   key={`subcategory-${subcategory.id}`}
@@ -1998,6 +2100,7 @@ const Tasks = () => {
                       } ${droppingInCategory === subcategory.id ? 'dropping-target' : ''}`}
                     >
                       <button
+                        type="button"
                         className={`subcategory-button ${
                           activeSubcategories.includes(subcategory.id) ? 'active' : ''
                         } ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
@@ -2009,6 +2112,7 @@ const Tasks = () => {
                         <FontAwesomeIcon
                           icon={faChevronDown}
                           className={activeSubcategories.includes(subcategory.id) ? 'rotated' : ''}
+                          aria-hidden="true"
                         />
                       </button>
                       {isDragging && (
@@ -2025,7 +2129,7 @@ const Tasks = () => {
           )}
 
           {/* Main task list area - we don't make this a droppable to fix cursor issues */}
-          <div className="task-list-container">
+          <div className="task-list-container" role="region" aria-label="Tasks list">
             {/* Group tasks by subcategory if actively viewing subcategories */}
             {activeSubcategoryIds.length > 0 ? (
               <>
@@ -2178,6 +2282,7 @@ const Tasks = () => {
                   <div className="no-tasks-placeholder">
                     <p>No tasks in this category</p>
                     <button
+                      type="button"
                       className="btn-primary"
                       onClick={() => setShowModal(true)}
                     >
@@ -2193,137 +2298,154 @@ const Tasks = () => {
 
       {/* Task Modal */}
       {showModal && (
-        <div className="modal" role="dialog" aria-modal="true">
+        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
           <div className="modal-content">
-            <h2>{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
-            <div className="form-group">
-              <label htmlFor="task-title">Task Title</label>
-              <input
-                id="task-title"
-                type="text"
-                placeholder="Enter task title"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="task-description">Description</label>
-              <textarea
-                id="task-description"
-                placeholder="Add task description"
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              />
-            </div>
-
-            <div className="form-row">
+            <h2 id="task-modal-title">{editingTask ? 'Edit Task' : 'Create New Task'}</h2>
+            <form onSubmit={handleSubmitTask}>
               <div className="form-group">
-                <label>Due Date</label>
-                <div className="date-input-container">
+                <label htmlFor="task-title">Task Title</label>
+                <input
+                  id="task-title"
+                  type="text"
+                  placeholder="Enter task title"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="task-description">Description</label>
+                <textarea
+                  id="task-description"
+                  placeholder="Add task description"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="task-due-date">Due Date</label>
+                  <div className="date-input-container">
+                    <input
+                      id="task-due-date"
+                      type="text"
+                      value={newTask.due_date ? new Date(newTask.due_date).toLocaleDateString() : ''}
+                      placeholder="Select date..."
+                      readOnly
+                      onClick={() => setShowDatePicker('modal')}
+                      className="date-input-field"
+                    />
+                    <button
+                      type="button"
+                      className="date-input-button"
+                      onClick={() => setShowDatePicker('modal')}
+                      aria-label="Select due date"
+                    >
+                      <FontAwesomeIcon icon={faCalendarDays} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="task-duration">Duration (minutes)</label>
                   <input
-                    type="text"
-                    value={newTask.due_date ? new Date(newTask.due_date).toLocaleDateString() : ''}
-                    placeholder="Select date..."
-                    readOnly
-                    onClick={() => setShowDatePicker('modal')}
-                    className="date-input-field"
+                    id="task-duration"
+                    type="number"
+                    placeholder="60"
+                    min="0"
+                    value={newTask.duration || ''}
+                    onChange={(e) => setNewTask({ ...newTask, duration: parseInt(e.target.value) || 0 })}
                   />
-                  <button
-                    className="date-input-button"
-                    onClick={() => setShowDatePicker('modal')}
-                    aria-label="Select due date"
-                  >
-                    <FontAwesomeIcon icon={faCalendarDays} />
-                  </button>
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label id="task-priority-label">Priority</label>
+                  <CustomDropdown
+                    value={newTask.priority}
+                    onChange={(value) => setNewTask({ ...newTask, priority: parseInt(value) })}
+                    options={[
+                      { value: 1, label: 'High Priority' },
+                      { value: 2, label: 'Medium Priority' },
+                      { value: 3, label: 'Low Priority' }
+                    ]}
+                    aria-labelledby="task-priority-label"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label id="task-category-label">Category</label>
+                  <CustomDropdown
+                    value={newTask.category}
+                    onChange={(value) => setNewTask({ ...newTask, category: value })}
+                    options={getCategoryOptions()}
+                    aria-labelledby="task-category-label"
+                  />
                 </div>
               </div>
 
               <div className="form-group">
-                <label htmlFor="task-duration">Duration (minutes)</label>
-                <input
-                  id="task-duration"
-                  type="number"
-                  placeholder="60"
-                  value={newTask.duration}
-                  onChange={(e) => setNewTask({ ...newTask, duration: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Priority</label>
-                <CustomDropdown
-                  value={newTask.priority}
-                  onChange={(value) => setNewTask({ ...newTask, priority: parseInt(value) })}
-                  options={[
-                    { value: 1, label: 'High Priority' },
-                    { value: 2, label: 'Medium Priority' },
-                    { value: 3, label: 'Low Priority' }
-                  ]}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Category</label>
-                <CustomDropdown
-                  value={newTask.category}
-                  onChange={(value) => setNewTask({ ...newTask, category: value })}
-                  options={getCategoryOptions()}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Tags</label>
-              <div className="tags-input-container">
-                {Array.isArray(newTask.tags) && newTask.tags.map((tag, index) => (
-                  <div key={index} className="tag-input-item">
-                    <span>{tag}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newTags = [...newTask.tags];
-                        newTags.splice(index, 1);
-                        setNewTask({ ...newTask, tags: newTags });
-                      }}
-                      aria-label={`Remove tag ${tag}`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-                <input
-                  type="text"
-                  placeholder="Add tags..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.target.value) {
-                      if (!Array.isArray(newTask.tags) || !newTask.tags.includes(e.target.value)) {
-                        setNewTask({
-                          ...newTask,
-                          tags: [...(Array.isArray(newTask.tags) ? newTask.tags : []), e.target.value]
-                        });
+                <label htmlFor="task-tags">Tags</label>
+                <div className="tags-input-container" id="task-tags">
+                  {Array.isArray(newTask.tags) && newTask.tags.length > 0 && (
+                    <div className="tags-list" role="list">
+                      {newTask.tags.map((tag, index) => (
+                        <div key={index} className="tag-input-item" role="listitem">
+                          <span>{tag}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newTags = [...newTask.tags];
+                              newTags.splice(index, 1);
+                              setNewTask({ ...newTask, tags: newTags });
+                            }}
+                            aria-label={`Remove tag ${tag}`}
+                          >
+                            <FontAwesomeIcon icon={faTimes} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Add tags and press Enter..."
+                    aria-label="Add tags"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.target.value) {
+                        e.preventDefault(); // Prevent form submission
+                        if (!Array.isArray(newTask.tags) || !newTask.tags.includes(e.target.value)) {
+                          setNewTask({
+                            ...newTask,
+                            tags: [...(Array.isArray(newTask.tags) ? newTask.tags : []), e.target.value]
+                          });
+                        }
+                        e.target.value = '';
                       }
-                      e.target.value = '';
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="modal-actions">
-              <button className="btn-primary" onClick={handleSubmitTask}>
-                {editingTask ? 'Save Changes' : 'Create Task'} </button>
-              <button className="btn-secondary" onClick={closeModal}> Cancel </button>
-            </div>
+              <div className="modal-actions">
+                <button type="submit" className="btn-primary">
+                  {editingTask ? 'Save Changes' : 'Create Task'}
+                </button>
+                <button type="button" className="btn-secondary" onClick={closeModal}>
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
       {/* Category Manager Modal */}
       {showCategoryManager && (
-        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="category-manager-title">
+        <div className="modal" role="dialog" aria-modal="true">
           <CategoryManager
             categories={categories}
             onAddCategory={handleAddCategory}
@@ -2349,7 +2471,7 @@ const Tasks = () => {
 
       {/* Date Picker Modal */}
       {showDatePicker && (
-        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="date-picker-title">
+        <div className="modal" role="dialog" aria-modal="true">
           <DatePickerModal
             selectedDate={showDatePicker === 'modal'
               ? newTask.due_date
