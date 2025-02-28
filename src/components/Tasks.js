@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faEllipsisVertical, faPlus, faCheck, faTags, faCalendarDays,
@@ -942,7 +942,8 @@ const Tasks = () => {
         const tasksWithStringIds = response.data.map(task => ({
           ...task,
           id: task.id.toString(),
-          parent_id: task.parent_id ? task.parent_id.toString() : null
+          parent_id: task.parent_id ? task.parent_id.toString() : null,
+          subtasks: task.subtasks ? task.subtasks.map(id => id.toString()) : [] // Convert subtask IDs to strings
         }));
         setTasks(tasksWithStringIds);
       } catch (error) {
@@ -1111,7 +1112,7 @@ const Tasks = () => {
 
         // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
-          parent_id: parentId
+          parent_id: parentId ? parseInt(parentId, 10) : null // Ensure parent_id is integer
         });
       } catch (error) {
         console.error('Error updating task parent:', error);
