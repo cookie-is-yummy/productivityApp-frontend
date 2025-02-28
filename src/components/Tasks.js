@@ -1200,9 +1200,9 @@ const Tasks = () => {
           setTasks(finalUpdatedTasks);
         }, 50);
 
-        // Update the backend
+        // Update the backend - ensure task ID is sent as string
         await axios.put(`/api/tasks/${taskId}`, {
-          parent_id: parentId ? parseInt(parentId, 10) : null // Ensure parent_id is integer
+          parent_id: parentId ? parseInt(parentId, 10) : null // Convert to integer for backend
         });
       } catch (error) {
         console.error('Error updating task parent:', error);
@@ -1297,9 +1297,9 @@ const Tasks = () => {
           setTasks(finalUpdatedTasks);
         }, 50);
 
-        // Update the backend
+        // Update the backend - ensure IDs are converted to integers for backend
         await axios.put(`/api/tasks/${taskId}`, {
-          parent_id: parentId
+          parent_id: parseInt(parentId, 10)
         });
       } catch (error) {
         console.error('Error updating task parent:', error);
@@ -1349,7 +1349,7 @@ const Tasks = () => {
     setDraggedTask(taskId);
 
     // Expanded parent tasks of the dragged task and any potential drop targets
-    const taskBeingDragged = tasks.find(t => t.id.toString() === taskId);
+    const taskBeingDragged = tasks.find(t => t.id === taskId);
 
     // Auto-expand all tasks that could receive subtasks to make dropping easier
     if (taskBeingDragged) {
@@ -1663,15 +1663,37 @@ const Tasks = () => {
         tags: processedTags
       };
 
-      const response = editingTask
-        ? await axios.put(`/api/tasks/${editingTask.id}`, taskToSubmit)
-        : await axios.post('/api/tasks', taskToSubmit);
-
+      let response;
       if (editingTask) {
-        setTasks(tasks.map(task => task.id === editingTask.id ? response.data : task));
+        response = await axios.put(`/api/tasks/${editingTask.id}`, taskToSubmit);
+        // Ensure response data has string IDs
+        response.data = {
+          ...response.data,
+          id: response.data.id.toString(),
+          parent_id: response.data.parent_id ? response.data.parent_id.toString() : null,
+          subtasks: Array.isArray(response.data.subtasks)
+            ? response.data.subtasks.map(id => id.toString())
+            : []
+        };
+
+        setTasks(tasks.map(task =>
+          task.id === response.data.id ? response.data : task
+        ));
       } else {
+        response = await axios.post('/api/tasks', taskToSubmit);
+        // Ensure response data has string IDs
+        response.data = {
+          ...response.data,
+          id: response.data.id.toString(),
+          parent_id: response.data.parent_id ? response.data.parent_id.toString() : null,
+          subtasks: Array.isArray(response.data.subtasks)
+            ? response.data.subtasks.map(id => id.toString())
+            : []
+        };
+
         setTasks([...tasks, response.data]);
       }
+
       closeModal();
     } catch (error) {
       console.error('Error saving task:', error);
