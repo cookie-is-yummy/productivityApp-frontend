@@ -1200,9 +1200,9 @@ const Tasks = () => {
           setTasks(finalUpdatedTasks);
         }, 50);
 
-        // Update the backend
+        // Update the backend - convert IDs to integers for backend
         await axios.put(`/api/tasks/${taskId}`, {
-          parent_id: parentId ? parseInt(parentId, 10) : null // Ensure parent_id is integer
+          parent_id: parentId ? parseInt(parentId, 10) : null
         });
       } catch (error) {
         console.error('Error updating task parent:', error);
@@ -1225,7 +1225,7 @@ const Tasks = () => {
 
         // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
-          category: categoryId ? parseInt(categoryId, 10) : null
+          category: categoryId
         });
 
         // Ensure the subcategory is active/visible after dropping
@@ -1297,7 +1297,7 @@ const Tasks = () => {
           setTasks(finalUpdatedTasks);
         }, 50);
 
-        // Update the backend
+        // Update the backend - ensure parentId is sent as a number
         await axios.put(`/api/tasks/${taskId}`, {
           parent_id: parentId ? parseInt(parentId, 10) : null
         });
@@ -1326,8 +1326,9 @@ const Tasks = () => {
       setTasks(updatedTasks);
 
       try {
+        // Make sure to convert task_order to a number for the backend
         await axios.put(`/api/tasks/${taskId}`, {
-          task_order: destination.index ? parseInt(destination.index, 10) : null
+          task_order: destination.index
         });
       } catch (error) {
         console.error('Error updating task order:', error);
@@ -1448,7 +1449,7 @@ const Tasks = () => {
         }
       }, 50);
 
-      // Update the backend
+      // Update the backend - ensure we send null for parent_id
       await axios.put(`/api/tasks/${taskId}`, {
         parent_id: null
       });
@@ -1667,10 +1668,18 @@ const Tasks = () => {
         ? await axios.put(`/api/tasks/${editingTask.id}`, taskToSubmit)
         : await axios.post('/api/tasks', taskToSubmit);
 
+      // Make sure the response data IDs are strings
+      const responseData = {
+        ...response.data,
+        id: String(response.data.id),
+        parent_id: response.data.parent_id ? String(response.data.parent_id) : null,
+        subtasks: response.data.subtasks ? response.data.subtasks.map(id => String(id)) : []
+      };
+
       if (editingTask) {
-        setTasks(tasks.map(task => task.id === editingTask.id ? response.data : task));
+        setTasks(tasks.map(task => task.id === editingTask.id ? responseData : task));
       } else {
-        setTasks([...tasks, response.data]);
+        setTasks([...tasks, responseData]);
       }
       closeModal();
     } catch (error) {
@@ -1680,11 +1689,11 @@ const Tasks = () => {
 
   const deleteTask = async (taskId) => {
     try {
-      taskId = taskId ? parseInt(taskId, 10) : null
-      await axios.delete(`/api/tasks/${taskId}`);
-
       // Get the task before filtering
       const taskToDelete = tasks.find(t => t.id === taskId);
+
+      // Use the original taskId from state for the API call
+      await axios.delete(`/api/tasks/${taskId}`);
 
       // If this is a subtask, remove it from its parent's subtasks list
       if (taskToDelete && taskToDelete.parent_id) {
