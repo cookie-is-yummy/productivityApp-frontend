@@ -1225,7 +1225,7 @@ const Tasks = () => {
 
         // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
-          category: categoryId
+          category: categoryId ? parseInt(categoryId, 10) : null
         });
 
         // Ensure the subcategory is active/visible after dropping
@@ -1299,7 +1299,7 @@ const Tasks = () => {
 
         // Update the backend
         await axios.put(`/api/tasks/${taskId}`, {
-          parent_id: parentId
+          parent_id: parentId ? parseInt(parentId, 10) : null
         });
       } catch (error) {
         console.error('Error updating task parent:', error);
@@ -1327,7 +1327,7 @@ const Tasks = () => {
 
       try {
         await axios.put(`/api/tasks/${taskId}`, {
-          task_order: destination.index
+          task_order: destination.index ? parseInt(destination.index, 10) : null
         });
       } catch (error) {
         console.error('Error updating task order:', error);
@@ -1680,6 +1680,7 @@ const Tasks = () => {
 
   const deleteTask = async (taskId) => {
     try {
+      taskId = taskId ? parseInt(taskId, 10) : null
       await axios.delete(`/api/tasks/${taskId}`);
 
       // Get the task before filtering
