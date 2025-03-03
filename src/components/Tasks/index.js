@@ -5,7 +5,7 @@ import {
   faPlus, faTimes, faFolder, faCalendarDays, faTags, faChevronDown
 } from '@fortawesome/free-solid-svg-icons';
 import axios from '../../axiosinstance';
-import '../styles/Tasks.css';
+import '../../styles/Tasks.css';
 
 // Import components
 import CustomDropdown from './CustomDropdown';
